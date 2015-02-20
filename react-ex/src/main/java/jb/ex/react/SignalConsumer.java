@@ -2,6 +2,7 @@ package jb.ex.react;
 
 import java.util.concurrent.CountDownLatch;
 
+import jb.ex.config.AppConfig;
 import jb.ex.vo.Sink;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,13 +28,22 @@ public class SignalConsumer implements Consumer<Event<Integer>> {
     }
 
 	private void processMessage() {
-		if (sink.getCounter() < sink.getUpdateInterval()){
-			sink.setCounter(sink.getCounter() + 1);
-			return;
+		try {
+			Thread.sleep(AppConfig.PROC_LATENCY);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-		
-		sink.setSink(sink.getSink() + sink.getCounter());
-		sink.setCounter(0);
+		synchronized (sink) {
+			if (sink.getCounter() < sink.getUpdateInterval()){
+				sink.setCounter(sink.getCounter() + 1);
+
+			}else{
+
+				sink.setSink(sink.getSink() + sink.getCounter());
+				sink.setCounter(0);
+			}
+		}
 	}
 
 }

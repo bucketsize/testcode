@@ -3,7 +3,7 @@ package jb.ex.react;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import jb.ex.Constants;
+import jb.ex.config.AppConfig;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,7 +27,7 @@ public class SignalProducer {
 
         System.out.println("firing requests n="+number);
         for (int i=0; i < number; i++) {
-            reactor.notify(Constants.EventHandle.PROC_EVENT, Event.wrap(counter.getAndIncrement()));
+            reactor.notify(AppConfig.PROC_EVENT, Event.wrap(counter.getAndIncrement()));
         }
         {
         	long elapsed0 = System.currentTimeMillis()-start;
@@ -50,7 +50,7 @@ public class SignalProducer {
 
         System.out.println("firing requests n="+number);
         for (int i=0; i < number; i++) {
-            reactor.notify(Constants.EventHandle.PROC_EVENT, Event.wrap(counter.getAndIncrement()));
+            reactor.notify(AppConfig.PROC_EVENT, Event.wrap(counter.getAndIncrement()));
         }
         {
         	long elapsed0 = System.currentTimeMillis()-start;

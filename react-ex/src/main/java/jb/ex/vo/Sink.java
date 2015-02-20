@@ -3,6 +3,12 @@ package jb.ex.vo;
 import java.io.Serializable;
 
 public class Sink implements Serializable {
+	@Override
+	public String toString() {
+		return String.format("Sink [updateInterval=%s, sink=%s, counter=%s]",
+				updateInterval, sink, counter);
+	}
+
 	/**
 	 * 
 	 */

@@ -3,6 +3,7 @@ package jb.ex;
 import jb.ex.config.AppConfig;
 import jb.ex.config.ReactorConfig;
 import jb.ex.react.SignalProducer;
+import jb.ex.vo.Sink;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -23,11 +24,16 @@ public class ReactDemo implements CommandLineRunner {
 
     @Autowired
     private SignalProducer publisher;
+    
+    @Autowired
+    private Sink sink;
 
     public void run(String... args) throws Exception {
     	System.out.println("starting producer");
-    	publisher.produceSignals(Constants.NUM_SIGNALS);
+    	//publisher.produceSignals(Constants.NUM_SIGNALS);
+    	publisher.sendMessages(AppConfig.NUM_SIGNALS);
     	System.out.println("done ... waiting");
+    	System.out.println("Sink: "+sink);
     }
     
     public static void main( String[] args ){
