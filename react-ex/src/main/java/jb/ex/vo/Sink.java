@@ -21,12 +21,23 @@ public class Sink implements Serializable {
 	}
 	public int getAccum() {
 		return accum.get();
+		
 	}
+	
+	public int setAccum(int update) {
+		return accum.getAndSet(update);
+		
+	}
+	
 	public boolean compareAndSetAccum(int expect, int update) {
 		return this.accum.compareAndSet(expect, update);
 	}
 	public int getCounter() {
 		return counter.get();
+	}
+	public int setCounter(int update) {
+		return counter.getAndSet(update);
+		
 	}
 	public boolean compareAndSetCounter(int expect, int update) {
 		return this.counter.compareAndSet(expect, update);

@@ -3,6 +3,7 @@ package jb.ex.react;
 import java.util.concurrent.CountDownLatch;
 
 import jb.ex.TimeUtils;
+import jb.ex.config.AppConfig;
 import jb.ex.vo.Sink;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,26 +35,24 @@ public class SignalConsumer implements Consumer<Event<Integer>> {
 				return;
 			}
 		}while(!sink.compareAndSetCounter(count, count + 1));
-		System.out.println("counter: "+count);
+		System.out.println("count: "+count);
 	}
 
 	private void accumAndResetCount() {
-		TimeUtils.sleep(100); // simulate network call
 		
-		// using CAS for sync
+		// first atomic-reset count
+		int count = sink.setCounter(0);
 		
-		// first update count
-		int count=0;
+		// excess updates past gate
+		int excess = count - sink.getUpdateInterval();
+				
+		TimeUtils.sleep(AppConfig.PROC_LATENCY); // simulate network call
 		
-		do{
-			count = sink.getCounter();
-		}while(!sink.compareAndSetCounter(count, 0));
-		
-		// then update accum
+		// then CAS-update accum
 		int accum=0;
 		do{
 			accum = sink.getAccum();
-		}while(!sink.compareAndSetAccum(accum, accum + count));
+		}while(!sink.compareAndSetAccum(accum, accum + sink.getUpdateInterval() + excess));
 		
 		System.out.println("accum: "+accum);
 	}
