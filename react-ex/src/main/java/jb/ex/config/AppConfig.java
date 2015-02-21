@@ -10,9 +10,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class AppConfig {
 
-	public static int NUM_SIGNALS = 10000;
+	public static int NUM_SIGNALS = 1001;
 	public static int UPD_INTERVL = 10;
-	public static int PROC_LATENCY = 30;
+	public static int PROC_LATENCY = 10;
 
 	public static String PROC_EVENT = "__req_processing_event__";
 	

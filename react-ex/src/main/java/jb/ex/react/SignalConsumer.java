@@ -36,12 +36,13 @@ public class SignalConsumer implements Consumer<Event<Integer>> {
 		}
 		synchronized (sink) {
 			if (sink.getCounter() < sink.getUpdateInterval()){
-				sink.setCounter(sink.getCounter() + 1);
-
-			}else{
-
-				sink.setSink(sink.getSink() + sink.getCounter());
-				sink.setCounter(0);
+				sink.compareAndSetCounter(sink.getCounter(), sink.getCounter() + 1);
+			}
+		}
+		synchronized (sink) {
+			if (sink.getCounter() >= sink.getUpdateInterval()){
+				sink.compareAndSetSink(sink.getSink(), sink.getSink() + sink.getCounter());
+				sink.compareAndSetCounter(sink.getCounter(), 0);
 			}
 		}
 	}
