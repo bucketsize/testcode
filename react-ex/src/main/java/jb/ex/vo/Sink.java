@@ -7,7 +7,7 @@ public class Sink implements Serializable {
 	@Override
 	public String toString() {
 		return String.format("Sink [updateInterval=%s, sink=%s, counter=%s]",
-				updateInterval, sink, counter);
+				updateInterval, accum, counter);
 	}
 
 	/**
@@ -17,25 +17,25 @@ public class Sink implements Serializable {
 	public Sink(int i) {
 		updateInterval=i;
 		counter=new AtomicInteger();
-		sink=new AtomicInteger();
+		accum=new AtomicInteger();
 	}
-	public int getSink() {
-		return sink.get();
+	public int getAccum() {
+		return accum.get();
 	}
-	public boolean compareAndSetSink(int expect, int update) {
-		return this.sink.compareAndSet(expect, update);
+	public boolean compareAndSetAccum(int expect, int update) {
+		return this.accum.compareAndSet(expect, update);
 	}
 	public int getCounter() {
 		return counter.get();
 	}
-	public void compareAndSetCounter(int expect, int update) {
-		this.counter.compareAndSet(expect, update);
+	public boolean compareAndSetCounter(int expect, int update) {
+		return this.counter.compareAndSet(expect, update);
 	}
 	public int getUpdateInterval() {
 		return updateInterval;
 	}
 	
 	private int updateInterval = 10;
-    private AtomicInteger sink;
+    private AtomicInteger accum;
     private AtomicInteger counter;
 }

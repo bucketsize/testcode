@@ -29,15 +29,13 @@ public class ReactDemo implements CommandLineRunner {
     private Sink sink;
 
     public void run(String... args) throws Exception {
-    	System.out.println("starting producer");
     	//publisher.produceSignals(Constants.NUM_SIGNALS);
-    	publisher.sendMessages(AppConfig.NUM_SIGNALS);
-    	System.out.println("done ... waiting");
-    	System.out.println("Sink: "+sink);
+    	publisher.sendEvents(AppConfig.NUM_SIGNALS);
+    	System.out.println("finally: "+sink);
     }
     
     public static void main( String[] args ){
-    	System.out.println("Starting...");
+    	System.out.println("Starting ...");
     	SpringApplication.run(ReactorConfig.class, args);
     }
 }

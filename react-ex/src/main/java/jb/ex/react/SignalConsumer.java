@@ -2,7 +2,7 @@ package jb.ex.react;
 
 import java.util.concurrent.CountDownLatch;
 
-import jb.ex.config.AppConfig;
+import jb.ex.TimeUtils;
 import jb.ex.vo.Sink;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,30 +21,40 @@ public class SignalConsumer implements Consumer<Event<Integer>> {
 	Sink sink;
 
     public void accept(Event<Integer> ev) {
-   		
-   		processMessage();
-   		
+   		processEvent();
         latch.countDown();
     }
 
-	private void processMessage() {
-		try {
-			Thread.sleep(AppConfig.PROC_LATENCY);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		synchronized (sink) {
-			if (sink.getCounter() < sink.getUpdateInterval()){
-				sink.compareAndSetCounter(sink.getCounter(), sink.getCounter() + 1);
+	private void processEvent() {
+		int count=0;
+		do{
+			count=sink.getCounter();
+			if (count >= sink.getUpdateInterval()){
+				accumAndResetCount();
+				return;
 			}
-		}
-		synchronized (sink) {
-			if (sink.getCounter() >= sink.getUpdateInterval()){
-				sink.compareAndSetSink(sink.getSink(), sink.getSink() + sink.getCounter());
-				sink.compareAndSetCounter(sink.getCounter(), 0);
-			}
-		}
+		}while(!sink.compareAndSetCounter(count, count + 1));
+		System.out.println("counter: "+count);
 	}
 
+	private void accumAndResetCount() {
+		TimeUtils.sleep(100); // simulate network call
+		
+		// using CAS for sync
+		
+		// first update count
+		int count=0;
+		
+		do{
+			count = sink.getCounter();
+		}while(!sink.compareAndSetCounter(count, 0));
+		
+		// then update accum
+		int accum=0;
+		do{
+			accum = sink.getAccum();
+		}while(!sink.compareAndSetAccum(accum, accum + count));
+		
+		System.out.println("accum: "+accum);
+	}
 }
