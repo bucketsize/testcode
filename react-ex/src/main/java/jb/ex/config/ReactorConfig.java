@@ -75,8 +75,8 @@ public class ReactorConfig {
 	
 	@Bean
 	public ThreadPoolExecutorDispatcher threadPoolExecutorDispatcher(){
-		ExecutorService executorService = Executors.newFixedThreadPool(16);
-		ThreadPoolExecutorDispatcher tpd = new ThreadPoolExecutorDispatcher(8, 10000, executorService);
+		ExecutorService executorService = Executors.newFixedThreadPool(AppConfig.NE_THREADS);
+		ThreadPoolExecutorDispatcher tpd = new ThreadPoolExecutorDispatcher(AppConfig.ND_THREADS, 10000, executorService);
 		return tpd;
 	}
 	

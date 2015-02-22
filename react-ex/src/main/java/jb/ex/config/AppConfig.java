@@ -9,12 +9,15 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class AppConfig {
-
-	public static int NUM_SIGNALS = 1001;
-	public static int UPD_INTERVL = 10;
-	public static int PROC_LATENCY = 10;
-
-	public static String PROC_EVENT = "__req_processing_event__";
+	
+	public static final int NUM_SIGNALS = 100000;
+	public static final int UPD_INTERVL = 10;
+	public static final int PROC_LATNCY = 100;
+	
+	public static final int NE_THREADS = 256;
+	public static final int ND_THREADS = 2;
+	
+	public static final String PROC_EVENT = "__req_processing_event__";
 	
     @Bean
     public CountDownLatch latch() {
