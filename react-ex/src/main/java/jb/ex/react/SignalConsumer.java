@@ -31,27 +31,42 @@ public class SignalConsumer implements Consumer<Event<Integer>> {
 		do{
 			count=sink.getCounter();
 			if (count >= sink.getUpdateInterval()){
-				accumAndResetCount();
+				sink = accumAndResetCount();
+				count = sink.getCounter();
 				return;
 			}
 		}while(!sink.compareAndSetCounter(count, count + 1));
 //		System.out.println("c1 count: "+count);
 	}
 
-	private void accumAndResetCount() {
-		
-		// first atomic-reset count
-		int count = sink.setCounter(1);  // 1  as this means 1 req pass thru this path
-//		System.out.println("c2 count: "+count);
+	private Sink accumAndResetCount() {
 		
 		TimeUtils.sleep(AppConfig.PROC_LATNCY); // simulate network call
 		
-		// then CAS-update accum
-		int accum=0;
-		do{
-			accum = sink.getAccum();
-		}while(!sink.compareAndSetAccum(accum, accum + count));
+		// first atomic-reset count
+		new SinkReset(sink).run();  // 1  as this means 1 req pass thru this path
+//		System.out.println("c2 count: "+count);
 		
+		return sink;
 //		System.out.println("c1 accum: "+(accum+count));
+	}
+	
+	private static class SinkReset implements Runnable {
+		
+		Sink sink;
+		
+		public SinkReset(Sink sink){
+			this.sink = sink;
+		}
+		
+		public void run() {
+			int count = sink.setCounter(1);
+			
+			// then CAS-update accum
+			int accum=0;
+			do{
+				accum = sink.getAccum();
+			}while(!sink.compareAndSetAccum(accum, accum + count));
+		}
 	}
 }

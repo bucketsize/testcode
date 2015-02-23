@@ -10,11 +10,11 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class AppConfig {
 	
-	public static final int NUM_SIGNALS = 100000;
+	public static final int NUM_SIGNALS = 10000;
 	public static final int UPD_INTERVL = 10;
 	public static final int PROC_LATNCY = 100;
 	
-	public static final int NE_THREADS = 256;
+	public static final int NE_THREADS = 64;
 	public static final int ND_THREADS = 2;
 	
 	public static final String PROC_EVENT = "__req_processing_event__";
