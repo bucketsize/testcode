@@ -1,6 +1,9 @@
 package jb.ex.react;
 
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+
+import javax.annotation.Resource;
 
 import jb.ex.TimeUtils;
 import jb.ex.config.AppConfig;
@@ -15,8 +18,11 @@ import reactor.function.Consumer;
 @Service
 public class SignalConsumer implements Consumer<Event<Integer>> {
 
-	@Autowired
+	@Resource(name="pLatch")
     CountDownLatch latch;
+	
+	@Resource(name="resetLatches")
+	ConcurrentMap<String, CountDownLatch> resetLatches;
     
 	@Autowired 
 	Sink sink;
@@ -33,40 +39,76 @@ public class SignalConsumer implements Consumer<Event<Integer>> {
 			if (count >= sink.getUpdateInterval()){
 				sink = accumAndResetCount();
 				count = sink.getCounter();
-				return;
 			}
 		}while(!sink.compareAndSetCounter(count, count + 1));
-//		System.out.println("c1 count: "+count);
+//		System.out.println("c1 count: " + count+1);
 	}
 
 	private Sink accumAndResetCount() {
 		
-		TimeUtils.sleep(AppConfig.PROC_LATNCY); // simulate network call
+		CountDownLatch resetLatch=null;
+		synchronized(sink){
+			resetLatch = getLatch("r1");
 		
-		// first atomic-reset count
-		new SinkReset(sink).run();  // 1  as this means 1 req pass thru this path
-//		System.out.println("c2 count: "+count);
+			// first atomic-reset count
+			if (resetLatch.getCount() > 1){
+				new Thread(new SinkReset(sink, this)).start();  // 1  as this means 1 req pass thru this path
+				resetLatch.countDown();
+			}    
+		}
+		
+		try {
+			resetLatch.await();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		
 		return sink;
-//		System.out.println("c1 accum: "+(accum+count));
 	}
 	
 	private static class SinkReset implements Runnable {
 		
 		Sink sink;
+		SignalConsumer cs;
 		
-		public SinkReset(Sink sink){
+		public SinkReset(Sink sink, SignalConsumer cs){
 			this.sink = sink;
+			this.cs = cs;
 		}
 		
 		public void run() {
+			
+			TimeUtils.sleep(AppConfig.PROC_LATNCY); // simulate network call
+
 			int count = sink.setCounter(1);
+			System.out.println(String.format("reset count to 1 ... excess=%s sum=%s", count, sink.getAccum()));
 			
 			// then CAS-update accum
 			int accum=0;
 			do{
 				accum = sink.getAccum();
 			}while(!sink.compareAndSetAccum(accum, accum + count));
+			
+			cs.purgeLatch("r1");
 		}
+	}
+	
+	public void purgeLatch(String id){
+		CountDownLatch latch  = resetLatches.get(jb.ex.KeyUtils.getRLatch(id));
+		System.out.println("PURGE Latch: "+latch);
+		resetLatches.remove(jb.ex.KeyUtils.getRLatch(id));
+		if (latch != null){
+			latch.countDown();
+		}
+	}
+	public CountDownLatch getLatch(String id){
+		CountDownLatch latch = resetLatches.get(jb.ex.KeyUtils.getRLatch(id));
+
+		if (latch == null){
+			latch = new CountDownLatch(2);
+			System.out.println("GOT Latch new: "+latch);
+			resetLatches.put(jb.ex.KeyUtils.getRLatch(id), latch);
+		}
+		return latch;
 	}
 }

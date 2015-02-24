@@ -3,6 +3,8 @@ package jb.ex.react;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.Resource;
+
 import jb.ex.TimeUtils;
 import jb.ex.config.AppConfig;
 
@@ -18,7 +20,7 @@ public class SignalProducer {
     @Autowired
     Reactor reactor;
 
-    @Autowired
+    @Resource(name="pLatch")
     CountDownLatch latch;
 
     public void produceSignals(int number) throws InterruptedException {
