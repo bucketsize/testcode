@@ -9,6 +9,8 @@ import jb.ex.TimeUtils;
 import jb.ex.config.AppConfig;
 import jb.ex.vo.Sink;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +19,8 @@ import reactor.function.Consumer;
 
 @Service
 public class SignalConsumer implements Consumer<Event<Integer>> {
-
+	private static final Logger LOG = LoggerFactory.getLogger(SignalConsumer.class);
+	
 	@Resource(name="pLatch")
     CountDownLatch latch;
 	
@@ -36,12 +39,12 @@ public class SignalConsumer implements Consumer<Event<Integer>> {
 		int count=0;
 		do{
 			count=sink.getCounter();
-			if (count >= sink.getUpdateInterval()){
+			while (count >= sink.getUpdateInterval()){
 				sink = accumAndResetCount();
 				count = sink.getCounter();
 			}
 		}while(!sink.compareAndSetCounter(count, count + 1));
-//		System.out.println("c1 count: " + count+1);
+//		LOG.debug("c1 count={}", count+1);
 	}
 
 	private Sink accumAndResetCount() {
@@ -81,7 +84,7 @@ public class SignalConsumer implements Consumer<Event<Integer>> {
 			TimeUtils.sleep(AppConfig.PROC_LATNCY); // simulate network call
 
 			int count = sink.setCounter(1);
-			System.out.println(String.format("reset count to 1 ... excess=%s sum=%s", count, sink.getAccum()));
+			LOG.debug("reset count to 1 ... excess={} sum={}", count, sink.getAccum());
 			
 			// then CAS-update accum
 			int accum=0;
@@ -95,7 +98,7 @@ public class SignalConsumer implements Consumer<Event<Integer>> {
 	
 	public void purgeLatch(String id){
 		CountDownLatch latch  = resetLatches.get(jb.ex.KeyUtils.getRLatch(id));
-		System.out.println("PURGE Latch: "+latch);
+		LOG.debug("PURGE Latch={}", latch);
 		resetLatches.remove(jb.ex.KeyUtils.getRLatch(id));
 		if (latch != null){
 			latch.countDown();
@@ -106,7 +109,7 @@ public class SignalConsumer implements Consumer<Event<Integer>> {
 
 		if (latch == null){
 			latch = new CountDownLatch(2);
-			System.out.println("GOT Latch new: "+latch);
+			LOG.debug("GOT Latch new={}", latch);
 			resetLatches.put(jb.ex.KeyUtils.getRLatch(id), latch);
 		}
 		return latch;

@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class AppConfig {
 	
-	public static final int NUM_SIGNALS = 10000;
+	public static final int NUM_SIGNALS = 1000;
 	public static final int UPD_INTERVL = 10;
 	public static final int PROC_LATNCY = 100;
 	

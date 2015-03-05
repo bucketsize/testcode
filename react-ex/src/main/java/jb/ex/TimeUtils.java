@@ -1,7 +1,13 @@
 package jb.ex;
 
+import jb.ex.react.SignalProducer;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class TimeUtils {
+	private static final Logger LOG = LoggerFactory.getLogger(TimeUtils.class);
 
 	public static void sleep(long millis){
 		try {
@@ -15,7 +21,7 @@ public class TimeUtils {
 	
 	public static void outTP(int number, long startMillis){
     	long elapsed = System.currentTimeMillis()-startMillis;
-    	System.out.println("run Time: " + elapsed + "ms");
-    	System.out.println("run Throughput: "+number / (elapsed / 1000.0f));
+    	LOG.info("run Time={}", elapsed);
+    	LOG.info("run Throughput={}", number / (elapsed / 1000.0f));
     }
 }
