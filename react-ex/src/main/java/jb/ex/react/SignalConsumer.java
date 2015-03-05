@@ -2,6 +2,11 @@ package jb.ex.react;
 
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 
 import javax.annotation.Resource;
 
@@ -30,6 +35,9 @@ public class SignalConsumer implements Consumer<Event<Integer>> {
 	@Autowired 
 	Sink sink;
 
+	ReadWriteLock lock = new ReentrantReadWriteLock();
+	AtomicBoolean inReset = new AtomicBoolean(false);
+
     public void accept(Event<Integer> ev) {
    		processEvent();
         latch.countDown();
@@ -48,16 +56,11 @@ public class SignalConsumer implements Consumer<Event<Integer>> {
 	}
 
 	private Sink accumAndResetCount() {
-		
-		CountDownLatch resetLatch=null;
-		synchronized(sink){
-			resetLatch = getLatch("r1");
-		
-			// first atomic-reset count
-			if (resetLatch.getCount() > 1){
-				new Thread(new SinkReset(sink, this)).start();  // 1  as this means 1 req pass thru this path
-				resetLatch.countDown();
-			}    
+		CountDownLatch resetLatch = getLatch("r1");
+
+		if (!inReset.get()){
+			inReset.set(true);
+			new Thread(new SinkReset(sink, this)).start();  // 1  as this means 1 req pass thru this path
 		}
 		
 		try {
@@ -70,7 +73,6 @@ public class SignalConsumer implements Consumer<Event<Integer>> {
 	}
 	
 	private static class SinkReset implements Runnable {
-		
 		Sink sink;
 		SignalConsumer cs;
 		
@@ -93,6 +95,7 @@ public class SignalConsumer implements Consumer<Event<Integer>> {
 			}while(!sink.compareAndSetAccum(accum, accum + count));
 			
 			cs.purgeLatch("r1");
+			
 		}
 	}
 	
@@ -102,16 +105,25 @@ public class SignalConsumer implements Consumer<Event<Integer>> {
 		resetLatches.remove(jb.ex.KeyUtils.getRLatch(id));
 		if (latch != null){
 			latch.countDown();
+			inReset.set(false);
 		}
 	}
+	
 	public CountDownLatch getLatch(String id){
-		CountDownLatch latch = resetLatches.get(jb.ex.KeyUtils.getRLatch(id));
-
-		if (latch == null){
-			latch = new CountDownLatch(2);
+		CountDownLatch latch = null;
+		WriteLock wlock = (WriteLock) lock.writeLock();
+		if (wlock.tryLock()){
+			latch = new CountDownLatch(1);
 			LOG.debug("GOT Latch new={}", latch);
 			resetLatches.put(jb.ex.KeyUtils.getRLatch(id), latch);
+			wlock.unlock();
+		}else{
+			ReadLock rlock = (ReadLock) lock.readLock();
+			rlock.lock();
+			latch = resetLatches.get(jb.ex.KeyUtils.getRLatch(id));
+			rlock.unlock();
 		}
+		
 		return latch;
 	}
 }
