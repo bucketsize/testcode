@@ -3,7 +3,7 @@
 
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>jb.rtr</groupId>
+	<groupId>jb.ex</groupId>
 	<artifactId>react-ex</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
@@ -14,7 +14,6 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
-
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
@@ -26,33 +25,40 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
-
 	<dependencies>
-	
+
+		<!-- storm -->
+		<!-- mvn jar resolution in order of pom.xml dependency listing, storm's 
+			disruptor conflicts with spring's dependencies, so storm needs to be de -clared 
+			first -->
+		<dependency>
+			<groupId>org.apache.storm</groupId>
+			<artifactId>storm-core</artifactId>
+			<version>0.9.5</version>
+		</dependency>
+
 		<!-- spring -->
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-context</artifactId>
 		</dependency>
-
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-web</artifactId>
 		</dependency>
-		
-		<!-- spring extra -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter</artifactId>
-			<version>1.1.8.RELEASE</version>
-		</dependency>
 
+		<!-- spring extra -->
 		<dependency>
 			<groupId>org.projectreactor.spring</groupId>
 			<artifactId>reactor-spring-context</artifactId>
 			<version>1.1.3.RELEASE</version>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+			<version>1.1.8.RELEASE</version>
+		</dependency>
 
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
@@ -67,17 +73,23 @@
 			<scope>test</scope>
 		</dependency>
 
-		
-		
-		<!-- storm -->
-		<dependency>
-			<groupId>org.apache.storm</groupId>
-			<artifactId>storm-core</artifactId>
-			<!-- <version>0.9.5</version> -->
-			<version>0.10.0-beta1</version>
-			
-		</dependency>
-		
+
+
 	</dependencies>
 
+	<build>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+			</resource>
+		</resources>
+
+		<plugins>
+			<plugin>
+				<groupId>org.eclipse.jetty</groupId>
+				<artifactId>jetty-maven-plugin</artifactId>
+				<version>9.3.5.v20151012</version>
+			</plugin>
+		</plugins>
+	</build>
 </project>

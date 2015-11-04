@@ -3,9 +3,13 @@ package jb.ex.react;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import jb.ex.TimeUtils;
-import jb.ex.config.AppConfig;
+import javax.annotation.Resource;
 
+import jb.ex.config.AppConfig;
+import jb.ex.utils.TimeUtils;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,11 +18,12 @@ import reactor.event.Event;
 
 @Service
 public class SignalProducer {
-
+	private static final Logger LOG = LoggerFactory.getLogger(SignalProducer.class);
+	
     @Autowired
     Reactor reactor;
 
-    @Autowired
+    @Resource(name="pLatch")
     CountDownLatch latch;
 
     public void produceSignals(int number) throws InterruptedException {
@@ -32,8 +37,8 @@ public class SignalProducer {
         }
         {
         	long elapsed0 = System.currentTimeMillis()-start;
-        	System.out.println("dispatch time: " + elapsed0 + "ms");
-        	System.out.println("dispatch Throughput: "+number / (elapsed0 / 1000.0f));
+        	LOG.debug("dispatch time={} ms", elapsed0);
+        	LOG.debug("dispatch Throughput={}", number / (elapsed0 / 1000.0f));
         }
         
         latch.await();
@@ -45,7 +50,7 @@ public class SignalProducer {
 
         AtomicInteger counter = new AtomicInteger(1);
 
-        System.out.println("firing requests n="+number);
+        LOG.debug("firing requests n={}", number);
         for (int i=0; i < number; i++) {
             reactor.notify(AppConfig.PROC_EVENT, Event.wrap(counter.getAndIncrement()));
         }

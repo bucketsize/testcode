@@ -1,11 +1,21 @@
 package jb.ex.react;
 
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 
-import jb.ex.TimeUtils;
+import javax.annotation.Resource;
+
 import jb.ex.config.AppConfig;
-import jb.ex.vo.Sink;
+import jb.ex.react.vo.Sink;
+import jb.ex.utils.TimeUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,12 +24,19 @@ import reactor.function.Consumer;
 
 @Service
 public class SignalConsumer implements Consumer<Event<Integer>> {
-
-	@Autowired
+	private static final Logger LOG = LoggerFactory.getLogger(SignalConsumer.class);
+	
+	@Resource(name="pLatch")
     CountDownLatch latch;
+	
+	@Resource(name="resetLatches")
+	ConcurrentMap<String, CountDownLatch> resetLatches;
     
 	@Autowired 
 	Sink sink;
+
+	ReadWriteLock lock = new ReentrantReadWriteLock();
+	AtomicBoolean inReset = new AtomicBoolean(false);
 
     public void accept(Event<Integer> ev) {
    		processEvent();
@@ -30,28 +47,83 @@ public class SignalConsumer implements Consumer<Event<Integer>> {
 		int count=0;
 		do{
 			count=sink.getCounter();
-			if (count >= sink.getUpdateInterval()){
-				accumAndResetCount();
-				return;
+			while (count >= sink.getUpdateInterval()){
+				sink = accumAndResetCount();
+				count = sink.getCounter();
 			}
 		}while(!sink.compareAndSetCounter(count, count + 1));
-		System.out.println("c1 count: "+count);
+//		LOG.debug("c1 count={}", count+1);
 	}
 
-	private void accumAndResetCount() {
+	private Sink accumAndResetCount() {
+		CountDownLatch resetLatch = getLatch("r1");
+
+		if (!inReset.get()){
+			inReset.set(true);
+			new Thread(new SinkReset(sink, this)).start();  // 1  as this means 1 req pass thru this path
+		}
 		
-		// first atomic-reset count
-		int count = sink.setCounter(1);  // 1  as this means 1 req pass thru this path
-		//System.out.println("c2 count: "+count);
+		try {
+			resetLatch.await();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		
-		TimeUtils.sleep(AppConfig.PROC_LATENCY); // simulate network call
+		return sink;
+	}
+	
+	private static class SinkReset implements Runnable {
+		Sink sink;
+		SignalConsumer cs;
 		
-		// then CAS-update accum
-		int accum=0;
-		do{
-			accum = sink.getAccum();
-		}while(!sink.compareAndSetAccum(accum, accum + count));
+		public SinkReset(Sink sink, SignalConsumer cs){
+			this.sink = sink;
+			this.cs = cs;
+		}
 		
-		System.out.println("c1 accum: "+(accum+count));
+		public void run() {
+			
+			TimeUtils.sleep(AppConfig.PROC_LATNCY); // simulate network call
+
+			int count = sink.setCounter(1);
+			LOG.debug("reset count to 1 ... excess={} sum={}", count, sink.getAccum());
+			
+			// then CAS-update accum
+			int accum=0;
+			do{
+				accum = sink.getAccum();
+			}while(!sink.compareAndSetAccum(accum, accum + count));
+			
+			cs.purgeLatch("r1");
+			
+		}
+	}
+	
+	public void purgeLatch(String id){
+		CountDownLatch latch  = resetLatches.get(jb.ex.utils.KeyUtils.getRLatch(id));
+		LOG.debug("PURGE Latch={}", latch);
+		resetLatches.remove(jb.ex.utils.KeyUtils.getRLatch(id));
+		if (latch != null){
+			latch.countDown();
+			inReset.set(false);
+		}
+	}
+	
+	public CountDownLatch getLatch(String id){
+		CountDownLatch latch = null;
+		WriteLock wlock = (WriteLock) lock.writeLock();
+		if (wlock.tryLock()){
+			latch = new CountDownLatch(1);
+			LOG.debug("GOT Latch new={}", latch);
+			resetLatches.put(jb.ex.utils.KeyUtils.getRLatch(id), latch);
+			wlock.unlock();
+		}else{
+			ReadLock rlock = (ReadLock) lock.readLock();
+			rlock.lock();
+			latch = resetLatches.get(jb.ex.utils.KeyUtils.getRLatch(id));
+			rlock.unlock();
+		}
+		
+		return latch;
 	}
 }

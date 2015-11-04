@@ -1,10 +1,11 @@
-package jb.ex;
+package jb.ex.react;
 
 import jb.ex.config.AppConfig;
 import jb.ex.config.ReactorConfig;
-import jb.ex.react.SignalProducer;
-import jb.ex.vo.Sink;
+import jb.ex.react.vo.Sink;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -18,6 +19,7 @@ import reactor.core.Reactor;
 @EnableAutoConfiguration
 @Import(value={AppConfig.class, ReactorConfig.class})
 public class ReactDemo implements CommandLineRunner {
+	private static final Logger LOG = LoggerFactory.getLogger(ReactDemo.class);
 	
     @Autowired
     private Reactor reactor;
@@ -31,11 +33,11 @@ public class ReactDemo implements CommandLineRunner {
     public void run(String... args) throws Exception {
     	//publisher.produceSignals(Constants.NUM_SIGNALS);
     	publisher.sendEvents(AppConfig.NUM_SIGNALS);
-    	System.out.println("finally: "+sink);
+    	LOG.info("finally={}", sink);
     }
     
     public static void main( String[] args ){
-    	System.out.println("Starting ...");
+    	LOG.info("Starting ...");
     	SpringApplication.run(ReactorConfig.class, args);
     }
 }
