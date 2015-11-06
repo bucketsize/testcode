@@ -1,6 +1,14 @@
 package jb.ex.strm.topol;
 
 import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+
+import org.apache.storm.guava.util.concurrent.FutureCallback;
+import org.apache.storm.guava.util.concurrent.Futures;
+import org.apache.storm.guava.util.concurrent.ListenableFuture;
+import org.apache.storm.guava.util.concurrent.ListeningExecutorService;
+import org.apache.storm.guava.util.concurrent.MoreExecutors;
 
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
@@ -74,7 +82,7 @@ public class GenDRPCTopology {
 			
 			int dp = r.nextInt(100);
 			
-			if(dp<30){
+			if(dp > 30){
 				collector.emit("squestion", new Values(arg+"_"+dp, retInfo));
 			}else{
 				collector.emit("sexclaim", new Values(arg+"_"+dp, retInfo));
@@ -113,11 +121,32 @@ public class GenDRPCTopology {
 
 		System.out.println(drpc.execute("exclamation", "drpc service initialized"));
 		
-		System.out.println("=================== starting test ================");
-		for(int i=0;i<100;i++){
-			// FIXME: sync op, make it async
-			System.out.println(drpc.execute("exclamation", "foo_"+i));
-		}
+		
+		
+		ListeningExecutorService service = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(10));
+		ListenableFuture<String> explosion = service.submit(new Callable<String>() {
+		  public String call() {
+			  System.out.println("call ...");
+			  Utils.sleep(1000);
+		    return "done";
+		  }
+		});
+		
+		Futures.addCallback(explosion, new FutureCallback<String>() {
+		  // we want this handler to run immediately after we push the big red button!
+		  public void onSuccess(String explosion) {
+			  System.out.println("success");
+		  }
+		  public void onFailure(Throwable thrown) {
+			  System.out.println("");
+		  }
+		});
+		
+//		System.out.println("=================== starting test ================");
+//		for(int i=0;i<100;i++){
+//			// FIXME: sync op, make it async
+//			System.out.println(drpc.execute("exclamation", "foo_"+i));
+//		}
 		
 	}
 
