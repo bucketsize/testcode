@@ -1,6 +1,5 @@
 package jb.ex.strm.topol;
 
-import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 
@@ -15,15 +14,8 @@ import backtype.storm.LocalCluster;
 import backtype.storm.LocalDRPC;
 import backtype.storm.drpc.DRPCSpout;
 import backtype.storm.drpc.ReturnResults;
-import backtype.storm.topology.BasicOutputCollector;
-import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.topology.base.BaseBasicBolt;
-import backtype.storm.tuple.Fields;
-import backtype.storm.tuple.Tuple;
-import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
-
 
 public class GenDRPCTopology {
 
@@ -32,66 +24,6 @@ public class GenDRPCTopology {
 	
 	public LocalDRPC getLocalDRPC(){
 		return drpc;
-	}
-
-	public static class ExclamationBolt extends BaseBasicBolt {
-
-		public void declareOutputFields(OutputFieldsDeclarer declarer) {
-			declarer.declare(new Fields("result", "return-info"));
-		}
-
-		public void execute(Tuple tuple, BasicOutputCollector collector) {
-			String arg = tuple.getString(0);
-			Object retInfo = tuple.getValue(1);
-			collector.emit(new Values(arg + "!!!", retInfo));
-		}
-
-	}
-
-	public static class QuestionBolt extends BaseBasicBolt {
-
-		public void declareOutputFields(OutputFieldsDeclarer declarer) {
-			declarer.declare(new Fields("result", "return-info"));
-		}
-
-		public void execute(Tuple tuple, BasicOutputCollector collector) {
-			String arg = tuple.getString(0);
-			Object retInfo = tuple.getValue(1);
-			
-			Utils.sleep(1000);
-			
-			collector.emit(new Values(arg + "???", retInfo));
-		}
-
-	}
-
-
-	public static class ValidationBolt extends BaseBasicBolt {
-
-		private static final Random r = new Random(182739821L);
-		
-		public void declareOutputFields(final OutputFieldsDeclarer outputFieldsDeclarer) {
-		    outputFieldsDeclarer.declareStream("squestion", new Fields("field1", "return-info"));
-		    outputFieldsDeclarer.declareStream("sexclaim",  new Fields("field1", "return-info"));
-		}
-		
-		public void execute(Tuple tuple, BasicOutputCollector collector) {
-			String arg = tuple.getString(0);
-			Object retInfo = tuple.getValue(1);
-			
-			
-			int dp = r.nextInt(100);
-			
-			if(dp > 30){
-				collector.emit("squestion", new Values(arg+"_"+dp, retInfo));
-			}else{
-				collector.emit("sexclaim", new Values(arg+"_"+dp, retInfo));
-			}
-			
-		}
-		
-		
-
 	}
 
 	public static void main(String[] args) {
@@ -105,13 +37,13 @@ public class GenDRPCTopology {
 
 		DRPCSpout spout = new DRPCSpout("exclamation", drpc);
 		builder.setSpout("drpc", spout);
-		builder.setBolt("validate", new ValidationBolt(), 3)
+		builder.setBolt("validate", 	new Bolts.ValidationBolt(), 3)
 			.shuffleGrouping("drpc");
-		builder.setBolt("exclaim", new ExclamationBolt(), 3)
+		builder.setBolt("exclaim", 		new Bolts.ExclamationBolt(), 3)
 			.shuffleGrouping("validate", "sexclaim");
-		builder.setBolt("question", new QuestionBolt(), 3)
+		builder.setBolt("question", 	new Bolts.QuestionBolt(), 3)
 			.shuffleGrouping("validate", "squestion");
-		builder.setBolt("return", new ReturnResults(), 3)
+		builder.setBolt("return", 		new ReturnResults(), 3)
 			.shuffleGrouping("exclaim")
 			.shuffleGrouping("question");
 
@@ -121,32 +53,42 @@ public class GenDRPCTopology {
 
 		System.out.println(drpc.execute("exclamation", "drpc service initialized"));
 		
-		
-		
-		ListeningExecutorService service = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(10));
-		ListenableFuture<String> explosion = service.submit(new Callable<String>() {
-		  public String call() {
-			  System.out.println("call ...");
-			  Utils.sleep(1000);
-		    return "done";
-		  }
-		});
-		
-		Futures.addCallback(explosion, new FutureCallback<String>() {
-		  // we want this handler to run immediately after we push the big red button!
-		  public void onSuccess(String explosion) {
-			  System.out.println("success");
-		  }
-		  public void onFailure(Throwable thrown) {
-			  System.out.println("");
-		  }
-		});
-		
 //		System.out.println("=================== starting test ================");
 //		for(int i=0;i<100;i++){
-//			// FIXME: sync op, make it async
+//			// sync op, make it async
 //			System.out.println(drpc.execute("exclamation", "foo_"+i));
 //		}
+		
+		System.out.println("=================== starting test ================");
+
+		// async version
+		for(int in=0;in<100;in++){
+			final int i = in;
+			ListeningExecutorService service = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(10));
+			ListenableFuture<String> explosion = service.submit(new Callable<String>() {
+				public String call() {
+					System.out.println("call ... "+i);
+					return drpc.execute("exclamation", "foo_"+i);
+				}
+			});
+
+			Futures.addCallback(explosion, new FutureCallback<String>() {
+				// we want this handler to run immediately after we push the big red button!
+				public void onSuccess(String result) {
+					System.out.println(">> "+result);
+				}
+				public void onFailure(Throwable thrown) {
+					System.out.println("");
+				}
+			});
+		}
+		System.out.println("=================== sent requests ================");
+		
+
+		
+		Utils.sleep(1000*60);
+		System.out.println("=================== completed test ================");
+		shutdown();
 		
 	}
 
