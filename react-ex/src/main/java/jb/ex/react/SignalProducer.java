@@ -5,18 +5,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Resource;
 
-import jb.ex.config.AppConfig;
+import jb.ex.config.ReactorConfig;
 import jb.ex.utils.TimeUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import reactor.core.Reactor;
 import reactor.event.Event;
 
 @Service
+@Profile("react")
 public class SignalProducer {
 	private static final Logger LOG = LoggerFactory.getLogger(SignalProducer.class);
 	
@@ -33,7 +35,7 @@ public class SignalProducer {
 
         System.out.println("firing requests n="+number);
         for (int i=0; i < number; i++) {
-            reactor.notify(AppConfig.PROC_EVENT, Event.wrap(counter.getAndIncrement()));
+            reactor.notify(ReactorConfig.PROC_EVENT, Event.wrap(counter.getAndIncrement()));
         }
         {
         	long elapsed0 = System.currentTimeMillis()-start;
@@ -52,7 +54,7 @@ public class SignalProducer {
 
         LOG.debug("firing requests n={}", number);
         for (int i=0; i < number; i++) {
-            reactor.notify(AppConfig.PROC_EVENT, Event.wrap(counter.getAndIncrement()));
+            reactor.notify(ReactorConfig.PROC_EVENT, Event.wrap(counter.getAndIncrement()));
         }
         TimeUtils.outTP(number, start);
 

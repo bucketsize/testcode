@@ -27,6 +27,12 @@
 	</dependencyManagement>
 	<dependencies>
 
+		<dependency>
+		  <groupId>io.vertx</groupId>
+		  <artifactId>vertx-web</artifactId>
+		  <version>3.2.0</version>
+		</dependency>
+
 		<!-- storm -->
 		<!-- mvn jar resolution in order of pom.xml dependency listing, storm's 
 			disruptor conflicts with spring's dependencies, so storm needs to be de -clared 
@@ -63,7 +69,7 @@
 			<artifactId>reactor-spring-context</artifactId>
 			<version>1.1.3.RELEASE</version>
 		</dependency>
-
+<!-- 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter</artifactId>
@@ -79,7 +85,7 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-
+ -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
@@ -109,25 +115,43 @@
 			<groupId>log4j</groupId>
 			<artifactId>log4j</artifactId>
 			<version>1.2.14</version>
-			<scope>runtime</scope>
 		</dependency>
 
 
 	</dependencies>
 
 	<build>
+
+		<plugins>
+
+			<plugin>
+				<groupId>org.eclipse.jetty</groupId>
+				<artifactId>jetty-maven-plugin</artifactId>
+				<version>9.3.5.v20151012</version>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.3</version>
+
+				<configuration>
+					<source>1.8</source>
+					<target>1.8</target>
+					<compilerVersion>1.8</compilerVersion>
+					<encoding>UTF-8</encoding>
+					<debug>true</debug>
+					<optimize>true</optimize>
+				</configuration>
+			</plugin>
+		</plugins>
+
 		<resources>
 			<resource>
 				<directory>src/main/resources</directory>
 			</resource>
 		</resources>
 
-		<plugins>
-			<plugin>
-				<groupId>org.eclipse.jetty</groupId>
-				<artifactId>jetty-maven-plugin</artifactId>
-				<version>9.3.5.v20151012</version>
-			</plugin>
-		</plugins>
+
 	</build>
 </project>

@@ -10,19 +10,21 @@ import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 
 import javax.annotation.Resource;
 
-import jb.ex.config.AppConfig;
+import jb.ex.config.ReactorConfig;
 import jb.ex.react.vo.Sink;
 import jb.ex.utils.TimeUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import reactor.event.Event;
 import reactor.function.Consumer;
 
 @Service
+@Profile("react")
 public class SignalConsumer implements Consumer<Event<Integer>> {
 	private static final Logger LOG = LoggerFactory.getLogger(SignalConsumer.class);
 	
@@ -83,7 +85,7 @@ public class SignalConsumer implements Consumer<Event<Integer>> {
 		
 		public void run() {
 			
-			TimeUtils.sleep(AppConfig.PROC_LATNCY); // simulate network call
+			TimeUtils.sleep(ReactorConfig.PROC_LATNCY); // simulate network call
 
 			int count = sink.setCounter(1);
 			LOG.debug("reset count to 1 ... excess={} sum={}", count, sink.getAccum());
