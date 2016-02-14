@@ -1,4 +1,4 @@
-package jb.ex;
+package jb.ex.utils;
 
 
 public class KeyUtils {

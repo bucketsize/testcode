@@ -10,19 +10,21 @@ import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 
 import javax.annotation.Resource;
 
-import jb.ex.TimeUtils;
-import jb.ex.config.AppConfig;
-import jb.ex.vo.Sink;
+import jb.ex.config.ReactorConfig;
+import jb.ex.react.vo.Sink;
+import jb.ex.utils.TimeUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import reactor.event.Event;
 import reactor.function.Consumer;
 
 @Service
+@Profile("react")
 public class SignalConsumer implements Consumer<Event<Integer>> {
 	private static final Logger LOG = LoggerFactory.getLogger(SignalConsumer.class);
 	
@@ -83,7 +85,7 @@ public class SignalConsumer implements Consumer<Event<Integer>> {
 		
 		public void run() {
 			
-			TimeUtils.sleep(AppConfig.PROC_LATNCY); // simulate network call
+			TimeUtils.sleep(ReactorConfig.PROC_LATNCY); // simulate network call
 
 			int count = sink.setCounter(1);
 			LOG.debug("reset count to 1 ... excess={} sum={}", count, sink.getAccum());
@@ -100,9 +102,9 @@ public class SignalConsumer implements Consumer<Event<Integer>> {
 	}
 	
 	public void purgeLatch(String id){
-		CountDownLatch latch  = resetLatches.get(jb.ex.KeyUtils.getRLatch(id));
+		CountDownLatch latch  = resetLatches.get(jb.ex.utils.KeyUtils.getRLatch(id));
 		LOG.debug("PURGE Latch={}", latch);
-		resetLatches.remove(jb.ex.KeyUtils.getRLatch(id));
+		resetLatches.remove(jb.ex.utils.KeyUtils.getRLatch(id));
 		if (latch != null){
 			latch.countDown();
 			inReset.set(false);
@@ -115,12 +117,12 @@ public class SignalConsumer implements Consumer<Event<Integer>> {
 		if (wlock.tryLock()){
 			latch = new CountDownLatch(1);
 			LOG.debug("GOT Latch new={}", latch);
-			resetLatches.put(jb.ex.KeyUtils.getRLatch(id), latch);
+			resetLatches.put(jb.ex.utils.KeyUtils.getRLatch(id), latch);
 			wlock.unlock();
 		}else{
 			ReadLock rlock = (ReadLock) lock.readLock();
 			rlock.lock();
-			latch = resetLatches.get(jb.ex.KeyUtils.getRLatch(id));
+			latch = resetLatches.get(jb.ex.utils.KeyUtils.getRLatch(id));
 			rlock.unlock();
 		}
 		

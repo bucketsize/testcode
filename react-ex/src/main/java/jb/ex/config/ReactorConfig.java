@@ -2,16 +2,20 @@ package jb.ex.config;
 
 import static reactor.event.selector.Selectors.$;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import jb.ex.react.SignalConsumer;
+import jb.ex.react.vo.Sink;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Profile;
 
 import reactor.core.Environment;
 import reactor.core.Reactor;
@@ -21,8 +25,8 @@ import reactor.spring.context.config.EnableReactor;
 
 @Configuration
 @EnableReactor
-@EnableAutoConfiguration
-@ComponentScan(basePackages={"jb.ex"})
+@Profile("react")
+@Import({BootConfig.class})
 public class ReactorConfig {
 
 	@Autowired
@@ -75,8 +79,8 @@ public class ReactorConfig {
 	
 	@Bean
 	public ThreadPoolExecutorDispatcher threadPoolExecutorDispatcher(){
-		ExecutorService executorService = Executors.newFixedThreadPool(AppConfig.NE_THREADS);
-		ThreadPoolExecutorDispatcher tpd = new ThreadPoolExecutorDispatcher(AppConfig.ND_THREADS, 10000, executorService);
+		ExecutorService executorService = Executors.newFixedThreadPool(NE_THREADS);
+		ThreadPoolExecutorDispatcher tpd = new ThreadPoolExecutorDispatcher(ND_THREADS, 10000, executorService);
 		return tpd;
 	}
 	
@@ -94,7 +98,33 @@ public class ReactorConfig {
     }
 
 	private void configureReactor(Reactor reactor) {
-		reactor.on($(AppConfig.PROC_EVENT), receiver);
+		reactor.on($(PROC_EVENT), receiver);
 	}
+	
+	//
+	public static final int NUM_SIGNALS = 1000;
+	public static final int UPD_INTERVL = 100;
+	public static final int PROC_LATNCY = 100;
+	
+	public static final int NE_THREADS = 10;
+	public static final int ND_THREADS = 2;
+	
+	public static final String PROC_EVENT = "__req_processing_event__";
+	
+    @Bean(name="pLatch")
+    public CountDownLatch pLatch() {
+        return new CountDownLatch(NUM_SIGNALS);
+    }
+
+    @Bean(name="resetLatches")
+    public ConcurrentMap<String, CountDownLatch> resetLatches() {
+        return new ConcurrentHashMap<String, CountDownLatch>();
+    }
+    
+    @Bean 
+    public Sink sink(){
+    	return new Sink(UPD_INTERVL);
+    }
+    //
 
 }

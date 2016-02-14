@@ -1,4 +1,4 @@
-package jb.ex;
+package jb.ex.utils;
 
 import jb.ex.react.SignalProducer;
 

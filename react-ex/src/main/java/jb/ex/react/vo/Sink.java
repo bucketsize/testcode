@@ -1,4 +1,4 @@
-package jb.ex.vo;
+package jb.ex.react.vo;
 
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
