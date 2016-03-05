@@ -25,7 +25,9 @@
 
   <target name="compile" >
     <mkdir dir="${project.builddir}/classes"/>
-    <javac srcdir="${project.srcdir}" destdir="${project.builddir}/classes" includeantruntime="false">
+    <javac srcdir="${project.srcdir}" destdir="${project.builddir}/classes" includeantruntime="false"
+      debug="true"
+      debuglevel="lines,vars,source">
       <classpath refid="lib.jars" />
     </javac>
   </target>
