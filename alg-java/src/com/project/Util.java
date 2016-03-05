@@ -1,19 +1,23 @@
+import java.security.SecureRandom;
 import java.util.Random;
 import java.util.function.Function;
 
 public class Util{
-    private static final Random rand = new Random(112358111932L);
+  //static long _RANDOM_SEED_ = 112358111932L;
+  static Random rng = new Random(); // weak && fast
+  //static SecureRandom rng = new SecureRandom(); // strong && slow
   public static int random(int ul){
-    return rand.nextInt(ul);
+    return rng.nextInt(ul);
   }
   public static int random(int l, int u){
     if (u < l) throw new IllegalArgumentException("not first < second");
     else
       if (u == l) return l;
-    else
-      return (l + rand.nextInt(u-l));
+      else
+        return (l + random(u-l));
   }
   public static Integer[] randoms(int n){
+    Random rand = new Random();
     Integer[] a = new Integer[n];
     for(int i=0; i<n; ++i)
       a[i] = rand.nextInt();
@@ -34,10 +38,10 @@ public class Util{
     return true;
   }
 
-  public static <T, U> void exec(Function<T, U> fn){
+  public static <V> void time(Function<String, V> fn){
     long t1 = System.currentTimeMillis();
     fn.apply("");
     long t2 = System.currentTimeMillis();
-    System.out.println("time = "+(t2-t1)+" ms");
+    System.out.printf("time = %s ms\n", (t2-t1));
   }
 }

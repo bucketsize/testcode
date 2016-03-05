@@ -2,7 +2,7 @@ import java.util.Arrays;
 
 public class QuickSort {
   public static <T extends Comparable> void sort(T[] array){
-    System.out.println(Arrays.toString(array));
+    //System.out.println(Arrays.toString(array));
     sort(array, 0, array.length-1);
   }
   public static <T extends Comparable> void sort(T[] array, int l, int h){
@@ -14,7 +14,7 @@ public class QuickSort {
   private static <T extends Comparable> int partition(T[] array, int l, int h){
     int pi = Util.random(l, h);
     T p = array[pi];
-    System.out.println(""+pi+", "+p.toString());
+    //System.out.println(""+pi+", "+p.toString());
     int i=l-1;
     int j=h+1;
     while(true){
@@ -28,18 +28,21 @@ public class QuickSort {
       if (i >= j) break;
     }
     Util.swap(array, i, j);
-    System.out.println(Arrays.toString(array));
+    //System.out.println(Arrays.toString(array));
     
     return j;
   }
 
   public static void main(String[] argv){
-    Integer[] arr1 = {4,18,2,41,1,8,5,15,77,23,56,92,21};
-    //Integer[] arr1 = Util.randoms(1000000);
+    //Integer[] arr1 = {4,18,2,41,1,8,5,15,77,23,56,92,21};
+    Integer[] arr1 = Util.randoms(1000000);
     
-    Util.exec(x -> {QuickSort.sort(arr1); return "";});
+    Util.time(x -> {
+      QuickSort.sort(arr1); 
+      return null;
+    });
 
-    System.out.printf("sorted=%s\n", Util.isSorted(arr1));
+    System.out.printf("sorted = %s\n", Util.isSorted(arr1));
   }
 }
 
