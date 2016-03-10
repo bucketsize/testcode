@@ -30,6 +30,14 @@ public class Bag<T> implements Iterable<T> {
             return Bag.this.A[cursor++];
         }
     }
+    public String toString(){
+        String s = "[";
+        for (int i=0; i<A.length && A[i] != null ;++i) {
+            s += A[i]+" ";
+        }
+        s += "]";
+        return s;
+    }
     public static void main(String[] args){
         Bag<Integer> bag = new Bag<Integer>(10);
         bag.add(22);

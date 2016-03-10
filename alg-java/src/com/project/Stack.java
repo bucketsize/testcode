@@ -36,6 +36,14 @@ public class Stack<T> implements Iterable<T> {
             return Stack.this.A[cursor++];
         }
     }
+    public String toString(){
+        String s="[";
+        for (int i=0; i<A.length && A[i] != null; ++i) {
+            s+=A[i]+" ";
+        }
+        s+="]";
+        return s; 
+    }
     public static void main(String[] args){
         Stack<Integer> bag = new Stack<Integer>(5);
         bag.push(22);
