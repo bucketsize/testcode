@@ -40,6 +40,6 @@ public class DepthFirstSearch {
     public static void main(String[] args) throws FileNotFoundException {
         Graph g = new Graph(new FileInputStream("/home/jb/tmp/alg-data/tinyCG.txt"));
         DepthFirstSearch dfs = new DepthFirstSearch(g, 0);
-        System.out.printf("pathTo(3): %s\n", dfs.pathTo(3).toString());
+        System.out.printf("pathTo(3): %s\n", dfs.pathTo(3));
     }
 }

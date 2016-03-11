@@ -4,16 +4,16 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 public class Queue<T> implements Iterable<T> {
-    public class Node{
+    private class Node{
         Node next;
         T value;
         public Node(T value){
             this.value=value;
         }
     }
-    Node head, tail;
-    int N;
-    public void queue(T item){
+    private Node head, tail;
+    private int N;
+    public void enque(T item){
         if (tail == null) {
             tail = new Node(item);
             head = tail;  
@@ -41,6 +41,9 @@ public class Queue<T> implements Iterable<T> {
     public int size(){
         return N;
     }
+    public boolean empty(){
+        return N==0;
+    }
     public Iterator<T> iterator(){
         return new QueueIterator();
     }
@@ -62,11 +65,11 @@ public class Queue<T> implements Iterable<T> {
  
     public static void main(String[] args) {
         Queue<Integer> queue = new Queue<Integer>();
-        queue.queue(5);
-        queue.queue(2);
-        queue.queue(33);
-        queue.queue(12);
-        queue.queue(15);
+        queue.enque(5);
+        queue.enque(2);
+        queue.enque(33);
+        queue.enque(12);
+        queue.enque(15);
 
         for (int i=0; i<5; ++i) {
             System.out.printf("dequed = %s\n", queue.deque());

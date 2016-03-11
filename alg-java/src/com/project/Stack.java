@@ -38,7 +38,7 @@ public class Stack<T> implements Iterable<T> {
     }
     public String toString(){
         String s="[";
-        for (int i=0; i<A.length && A[i] != null; ++i) {
+        for (int i=A.length-1; i>-1 && A[i] != null; --i) {
             s+=A[i]+" ";
         }
         s+="]";
@@ -52,24 +52,20 @@ public class Stack<T> implements Iterable<T> {
         bag.push(13);
         bag.push(100);
 
-        for(Integer i: bag){
-            System.out.printf("item = %s\n", i);
-        }
+        System.out.printf("Items: %s\n", bag);
 
         try{ 
             bag.push(10);     
         }catch(Exception ex){
-            System.out.printf("exception: %s\n", ex.getMessage());
+            System.out.printf("exception: %s\n", ex);
         }
 
-        for (int i=0; i<5; ++i) {
-            System.out.printf("item = %s\n", bag.pop());
-        }
-        
+        System.out.printf("Items: %s\n", bag);
+
         try{ 
             bag.pop();     
         }catch(Exception ex){
-            System.out.printf("exception: %s\n", ex.getMessage());
+            System.out.printf("exception: %s\n", ex);
         }
 
 
