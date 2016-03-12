@@ -3,12 +3,12 @@ package com.project;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
-public class BreadthFirstSearch {
+public class BFS {
     private Graph graph;
     private int origin;
     private boolean[] marked;
     private int[] edgeTo;
-    public BreadthFirstSearch(Graph g, int o){
+    public BFS(Graph g, int o){
         graph = g;
         origin = o;
         marked = new boolean[graph.V()];
@@ -42,7 +42,7 @@ public class BreadthFirstSearch {
     }
     public static void main(String[] args) throws FileNotFoundException {
         Graph graph = new Graph(new FileInputStream("/home/jb/tmp/alg-data/tinyCG.txt"));
-        BreadthFirstSearch bfs = new BreadthFirstSearch(graph, 0);
+        BFS bfs = new BFS(graph, 0);
         System.out.printf("0-pathTo[3]: %s", bfs.pathTo(3));
     }
 }

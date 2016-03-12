@@ -1,13 +1,15 @@
 <project>
 
   <!-- project specific properties -->
-  <property name="project.name" location="PROJECT_NAME" />
-  <property name="project.main" location="Main" />
-  <property name="project.builddir" location="target" />
-  <property name="project.libdir" location="lib" />
-  <property name="project.srcdir" location="src" />
-  <property name="project.testsdir" location="src/test" />
-  <property name="project.reportsdir" location="target/reports" />
+  <property name="project.name" value="PROJECT_NAME" />
+  <property name="project.main" value="Main" />
+  <property name="project.builddir" value="target" />
+  <property name="project.libdir" value="lib" />
+  <property name="project.srcdir" value="src" />
+  <property name="project.testsdir" value="src/test" />
+  <property name="project.reportsdir" value="target/reports" />
+  <property name="project.jsrc.version" value="1.8" />
+  <property name="project.jre.version" value="1.8" />
 
   <!-- set CLASSPATH argument -->
   <path id="dir.classes">
@@ -25,14 +27,33 @@
 
   <target name="compile" >
     <mkdir dir="${project.builddir}/classes"/>
+    <!-- SunJDK:javac -->
     <javac 
       srcdir="${project.srcdir}" 
       destdir="${project.builddir}/classes" 
       debug="true"
       debuglevel="lines,vars,source"
-      failonerror="true">
+      failonerror="true"
+      includeantruntime="false"
+      source="${project.jsrc.version}" 
+      target="${project.jre.version}"
+      >
       <classpath refid="lib.jars" />
     </javac>
+    <!-- ECJ -->
+    <!--<javac -->
+      <!--srcdir="${project.srcdir}" -->
+      <!--destdir="${project.builddir}/classes" -->
+      <!--debug="true"-->
+      <!--debuglevel="lines,vars,source"-->
+      <!--failonerror="true"-->
+      <!--includeantruntime="false"-->
+      <!--classpath="lib/jdtCompilerAdapter.jar"-->
+      <!--compiler="org.eclipse.jdt.core.JDTCompilerAdapter"-->
+      <!--source="${project.jsrc.version}" -->
+      <!--target="${project.jre.version}">-->
+      <!--<classpath refid="lib.jars" />-->
+    <!--</javac>-->
   </target>
 
   <target name="jar">

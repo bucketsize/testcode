@@ -38,8 +38,9 @@ public class Stack<T> implements Iterable<T> {
     }
     public String toString(){
         String s="[";
-        for (int i=A.length-1; i>-1 && A[i] != null; --i) {
-            s+=A[i]+" ";
+        for (int i=A.length-1; i>-1; --i) {
+            if (A[i] != null)
+                s+=A[i]+" ";
         }
         s+="]";
         return s; 

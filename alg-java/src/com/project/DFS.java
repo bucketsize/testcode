@@ -6,12 +6,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class DepthFirstSearch {
+public class DFS {
     private Graph graph;
     private int origin;
     private boolean[] marked;
     private int[] edgeTo;
-    public DepthFirstSearch(Graph g, int o){
+    public DFS(Graph g, int o){
         graph = g;
         origin = origin;   
         marked = new boolean[g.V()];
@@ -39,7 +39,7 @@ public class DepthFirstSearch {
     }
     public static void main(String[] args) throws FileNotFoundException {
         Graph g = new Graph(new FileInputStream("/home/jb/tmp/alg-data/tinyCG.txt"));
-        DepthFirstSearch dfs = new DepthFirstSearch(g, 0);
+        DFS dfs = new DFS(g, 0);
         System.out.printf("pathTo(3): %s\n", dfs.pathTo(3));
     }
 }
