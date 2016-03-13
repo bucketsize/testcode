@@ -6,5 +6,8 @@ public class A{
         b.add(1);
         Queue<Integer> q = new Queue<>();
         q.enque(2);
+
+        System.out.println("A2");
+        System.out.println("A3");
     }
 }

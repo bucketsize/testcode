@@ -61,7 +61,20 @@ public class Queue<T> implements Iterable<T> {
             return item;
         }
     }
+    public String toString() {
+        StringBuilder sb =  new StringBuilder();
+        sb
+            .append("[");
+        for (T v: this) {
+            sb
+                .append(v)
+                .append(" ");
+        }
+        sb
+            .append("]");
 
+        return sb.toString();
+    }
  
     public static void main(String[] args) {
         Queue<Integer> queue = new Queue<Integer>();
@@ -71,6 +84,7 @@ public class Queue<T> implements Iterable<T> {
         queue.enque(12);
         queue.enque(15);
 
+        System.out.printf("toString: %s\n", queue);
         for (int i=0; i<5; ++i) {
             System.out.printf("dequed = %s\n", queue.deque());
         }

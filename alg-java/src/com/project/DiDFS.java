@@ -26,5 +26,11 @@ public class DiDFS {
         DiGraph graph = new DiGraph(new FileInputStream("/home/jb/tmp/alg-data/tinyDG.txt"));
         DiDFS ddfs = new DiDFS(graph, 2);
         System.out.printf("reachable(2->7): %s\n", ddfs.hasPathTo(7));
+
+        for (int i=0; i<graph.V(); i++) {
+            if (ddfs.hasPathTo(i)){
+                System.out.printf("%s ", i);
+            }
+        }
     }
 }
