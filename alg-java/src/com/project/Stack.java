@@ -2,6 +2,8 @@ package com.project;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Spliterator;
+import java.util.function.Consumer;
 
 public class Stack<T> implements Iterable<T> {
     private T[] A;
@@ -35,6 +37,16 @@ public class Stack<T> implements Iterable<T> {
         public T next(){
             return Stack.this.A[cursor++];
         }
+		@Override
+		public void remove() {
+			// TODO Auto-generated method stub
+			
+		}
+		@Override
+		public void forEachRemaining(Consumer<? super T> action) {
+			// TODO Auto-generated method stub
+			
+		}
     }
     public String toString(){
         String s="[";
@@ -71,4 +83,14 @@ public class Stack<T> implements Iterable<T> {
 
 
     }
+	@Override
+	public void forEach(Consumer<? super T> action) {
+		// TODO Auto-generated method stub
+		
+	}
+	@Override
+	public Spliterator<T> spliterator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

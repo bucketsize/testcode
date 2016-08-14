@@ -2,6 +2,8 @@ package com.project;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Spliterator;
+import java.util.function.Consumer;
 
 public class Queue<T> implements Iterable<T> {
     private class Node{
@@ -60,6 +62,16 @@ public class Queue<T> implements Iterable<T> {
             cursor = cursor.next;   
             return item;
         }
+		@Override
+		public void remove() {
+			// TODO Auto-generated method stub
+			
+		}
+		@Override
+		public void forEachRemaining(Consumer<? super T> action) {
+			// TODO Auto-generated method stub
+			
+		}
     }
     public String toString() {
         StringBuilder sb =  new StringBuilder();
@@ -95,5 +107,15 @@ public class Queue<T> implements Iterable<T> {
             e.printStackTrace();
         }
     }
+	@Override
+	public void forEach(Consumer<? super T> action) {
+		// TODO Auto-generated method stub
+		
+	}
+	@Override
+	public Spliterator<T> spliterator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
 

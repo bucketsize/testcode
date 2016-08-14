@@ -1,6 +1,8 @@
 package com.project;
 
 import java.util.Iterator;
+import java.util.Spliterator;
+import java.util.function.Consumer;
 
 public class Bag<T> implements Iterable<T> {
     private T[] A;
@@ -29,6 +31,16 @@ public class Bag<T> implements Iterable<T> {
         public T next(){
             return Bag.this.A[cursor++];
         }
+		@Override
+		public void remove() {
+			// TODO Auto-generated method stub
+			
+		}
+		@Override
+		public void forEachRemaining(Consumer<? super T> action) {
+			// TODO Auto-generated method stub
+			
+		}
     }
     public String toString(){
         String s = "[";
@@ -51,4 +63,14 @@ public class Bag<T> implements Iterable<T> {
             System.out.printf("item = %s\n", i);
         }
     }
+	@Override
+	public void forEach(Consumer<? super T> action) {
+		// TODO Auto-generated method stub
+		
+	}
+	@Override
+	public Spliterator<T> spliterator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

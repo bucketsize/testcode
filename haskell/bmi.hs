@@ -10,6 +10,6 @@ main = do
 	args <- getArgs
 	case args of 
 		[wt, ht] -> do
-									print ("got h="++show(ht)++" w="++show(wt))
-									print (bmi (read wt::Float) (read ht::Float))
-		_				 -> print "error: enter weight followed by height"
+									putStr ("got h="++show(ht)++" w="++show(wt)++"\n")
+									putStr ("bmi="++show(bmi (read wt::Float) (read ht::Float))++"\n")
+		_				 -> putStr "error: enter weight followed by height\n"
