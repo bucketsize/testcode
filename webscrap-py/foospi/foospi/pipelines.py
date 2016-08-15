@@ -8,7 +8,7 @@ import json
 
 class TxtWriterPipeline(object):
     def __init__(self):
-        self.file = open('items.txt', 'wb')
+        self.file = open('items.txt', 'ab')
 
     def process_item(self, item, spider):
         self.file.write('name: {}\n'.format(item['name']))
@@ -23,7 +23,7 @@ class TxtWriterPipeline(object):
 
 class JsonWriterPipeline(object):
     def __init__(self):
-        self.file = open('items.json', 'wb')
+        self.file = open('items.json', 'ab')
 
     def process_item(self, item, spider):
         doc = json.dumps(dict(item)) + ',\n'

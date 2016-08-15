@@ -7,14 +7,13 @@
 
 import scrapy
 
-
-class FoospiItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
-
 class AmzItem(scrapy.Item):
+    subCat = scrapy.Field()
+    ASIN = scrapy.Field()
     name = scrapy.Field()
     maker = scrapy.Field()
     url = scrapy.Field()
     imgUrl = scrapy.Field()
+    price = scrapy.Field()
+    oldPrice = scrapy.Field()
+    timestamp = scrapy.Field()

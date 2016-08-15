@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import scrapy
 from foospi.items import AmzItem
+from datetime import datetime
 import re
 
 class AmzSpider(scrapy.Spider):
@@ -33,22 +34,32 @@ class AmzSpider(scrapy.Spider):
             yield scrapy.Request(reUrl, callback=self.parseSubCat)
         else:    
             self.logger.info(">>> COMPLETED")
+            subCat = response.css('.bxw-pageheader__title__text > h1 ::text').extract_first()
             for itemEl in response.css('.s-result-item'):
-                item = AmzItem()
-                item['url'] = itemEl.css('.a-link-normal ::attr(href)').extract_first()
-                item['imgUrl'] = itemEl.css('.a-link-normal > img ::attr(src)').extract_first()
-                # name
-                name = itemEl.css('.a-link-normal')[1].css('a ::text').extract_first()
-                if 'See' in name.split(' '):
-                    name = itemEl.css('.a-link-normal')[2].css('a ::text').extract_first()
-                item['name'] = name
-                # maker    
-                maker = None
                 try:
+                    item = AmzItem()
+                    item['timestamp'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    # subcat, asin, url, imgurl
+                    item['subCat'] = subCat
+                    item['ASIN'] = itemEl.css('li ::attr(data-asin)').extract_first()
+                    item['url'] = itemEl.css('.a-link-normal ::attr(href)').extract_first()
+                    item['imgUrl'] = itemEl.css('.a-link-normal > img ::attr(src)').extract_first()
+                    
+                    # name
+                    # price
+                    name = itemEl.css('.a-link-normal')[1].css('a ::text').extract_first()
+                    price = itemEl.css('li > div > div')[3].css('div > a > span ::text')[1].extract()
+                    oldPrice = itemEl.css('li > div > div')[3].css('div > span')[1].css('::text')[1].extract()
+                    if 'See' in name.split(' '):
+                        name = itemEl.css('.a-link-normal')[2].css('a ::text').extract_first()
+                        price = itemEl.css('li > div > div')[4].css('div > a > span ::text')[1].extract()
+                        oldPrice = itemEl.css('li > div > div')[4].css('div > span')[1].css('::text')[1].extract()
+                    item['name'], item['price'], item['oldPrice'] = name, price, oldPrice
+                    
+                    # maker    
                     maker = itemEl.css('li > div > div')[2].css('div > div')[1].css('div > span::text')[1].extract()
                 except:
-                    maker = 'error scraping, retry with {}'.format(item['url'])
-                item['maker'] = maker
+                    self.logger.info('>>> SCRAPE-FAILED {}'.format(item['url']))
                 yield item 
 
             nextUrl = response.css('#pagnNextLink ::attr(href)').extract_first()

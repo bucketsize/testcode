@@ -2,8 +2,8 @@
 
 * resume
 * (done) NextLine crawline
-* ASIN
-* cat > subcat in json
+* (done) ASIN
+* (done) cat > subcat in json
 * download image
 
 
