@@ -22,19 +22,21 @@ class AmzSpider(scrapy.Spider):
                     if re.search('All', sub_cat):
                         self.logger.info('>>> IGNORE {}'.format(sub_cat))
                         return
+                    # yield scrapy.Request(self.baseUrl + sub_cat, callback=(lambda r: self.parseSubCat(r, cat)))
                     yield scrapy.Request(self.baseUrl + sub_cat, callback=self.parseSubCat)
 
-    def parseSubCat(self, response):
+    def parseSubCat(self, response, cat='Undefined'):
         if response.status in [301, 302] and 'Location' in response.headers:
             reUrl = response.headers['Location'] 
             self.logger.info('>>> MANUAL REDIR {}'.format(reUrl))
             if re.search('[Bb][Oo][Oo][Kk]', reUrl):
                 self.logger.info('>>> IGNORE {}'.format(reUrl))
                 return
+            # yield scrapy.Request(reUrl, callback=(lambda r: self.parseSubCat(r, cat)))
             yield scrapy.Request(reUrl, callback=self.parseSubCat)
         else:    
             self.logger.info(">>> COMPLETED")
-            subCat = response.css('.bxw-pageheader__title__text > h1 ::text').extract_first()
+            subCat = response.css('.bxw-pageheader__title__text > h1 ::text').extract_first() or cat
             for itemEl in response.css('.s-result-item'):
                 try:
                     item = AmzItem()
@@ -65,6 +67,7 @@ class AmzSpider(scrapy.Spider):
             nextUrl = response.css('#pagnNextLink ::attr(href)').extract_first()
             self.logger.info('>>> NEXT-LINK {}'.format(nextUrl))
             if nextUrl:
+                # yield scrapy.Request(self.baseUrl+nextUrl, callback=(lambda r: self.parseSubCat(r, cat)))
                 yield scrapy.Request(self.baseUrl+nextUrl, callback=self.parseSubCat)
 
             
