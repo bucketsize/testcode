@@ -1,16 +1,19 @@
-import Network.HTTP.Conduit
-import System.Environment (getArgs)
-import qualified Data.ByteString.Lazy as L
-import Control.Monad.IO.Class (liftIO)
+{-# LANGUAGE OverloadedStrings #-}
+
+import           Data.Aeson            (Value)
+import qualified Data.ByteString.Char8 as L8
+import qualified Data.Yaml             as Yaml
+import           Network.HTTP.Simple
+
 
 main :: IO ()
 main = do
-    args <- getArgs
-    case args of
-        [urlString] ->
-            case parseUrl urlString of
-                Nothing -> putStrLn "Sorry, invalid URL"
-                Just req -> withManager $ \manager -> do
-                    res <- httpLbs req manager
-                    liftIO $ L.putStr $ responseBody res
-        _ -> putStrLn "Sorry, please provide exactly one URL"
+    let request =
+            setRequestPath "/get"
+                (setRequestHost "httpbin.org"
+                    defaultRequest)
+    response <- httpJSON request
+
+    putStrLn ("status: " ++ show (getResponseStatusCode response))
+    putStrLn ("content-type: " ++ show (getResponseHeader "Content-Type" response))
+    L8.putStrLn (Yaml.encode ((getResponseBody response)::Value))
