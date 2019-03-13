@@ -9,6 +9,7 @@ import Data.Aeson
 import Data.Time.Clock (UTCTime)
 import Data.Text (Text)
 import GHC.Generics
+import qualified Data.ByteString.Lazy.Char8 as L8
 
 
 --authHost = "localhost:8000"
@@ -40,6 +41,6 @@ timeline name = do
     signedreq <- signOAuth twitOAuth twitCred req
     manager <- newManager tlsManagerSettings
     res <- httpLbs signedreq manager
-    print $ responseBody res
+    L8.putStrLn $ responseBody res
     --return $ eitherDecode $ responseBody res
 
