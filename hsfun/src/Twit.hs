@@ -20,14 +20,14 @@ apiHost = "api.twitter.com"
 twitOAuth :: OAuth
 twitOAuth = newOAuth
   { oauthServerName      = authHost
-  , oauthConsumerKey     = "nZd6Sbl8mSVB6Ixp0oLtIMQyQ"
-  , oauthConsumerSecret  = "oXKq03bJiFlhg1RQ9lLFaz3U56qyj52dyUTVSoMkZLzmitnan9"
+  , oauthConsumerKey     = ""
+  , oauthConsumerSecret  = ""
   }
 
 twitCred :: Credential
 twitCred = newCredential
-  "18572476-L4P12BJryNpRIx4ocE85CPnnEqlpaSXFQeoCzbrAZ"
-  "hQ7tSFUgBaS57FFP1vYN4g6WzLTgBQHT4B76ZfpsdGeoy"
+  ""
+  ""
 
 data Tweet = Tweet
   { text :: !Text
