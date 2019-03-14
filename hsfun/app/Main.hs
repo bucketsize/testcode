@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 import System.Environment (getArgs)
-import Twit (timeline)
+import Twit (timeline, timeline2)
 
 -- curl -XPOST https://api.twitter.com/oauth2/token?grant_type=client_credentials -H "authorization:Basic blpkNlNibDhtU1ZCNkl4cDBvTHRJTVF5UTpvWEtxMDNiSmlGbGhnMVJROWxMRmF6M1U1NnF5ajUyZHlVVFZTb01rWkx6bWl0bmFuOQ=="
 --
@@ -14,7 +14,7 @@ import Twit (timeline)
 
 main :: IO ()
 main = do
-  timeline "Hackage"
+  timeline2 "Hackage"
   -- case ets of
   --   Left  err -> putStrLn err
   --   Right ts  -> mapM_ print $ take 5 ts

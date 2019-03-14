@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE ExtendedDefaultRules #-}
 module Twit where
 
 import Data.ByteString (ByteString)
@@ -13,6 +14,7 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import qualified Data.ByteString.Char8 as C8
 import System.Environment
 import Network.Connection
+import Conduit
 
 --authHost = "localhost:8000"
 --apiHost = "localhost:8000"
@@ -64,3 +66,13 @@ timeline name = do
     L8.putStrLn $ responseBody res
     --return $ eitherDecode $ responseBody res
 
+timeline2 name = do
+    req  <- parseUrlThrow $ "https://"++ apiHost ++"/1.1/statuses/user_timeline.json?screen_name=" ++ name
+    auth <- twitOAuth
+    cred <- twitCred
+    signedreq <- signOAuth auth cred req
+    -- manager <- newManager tlsManagerSettings
+    manager <- noSSLVerifyManager
+    runResourceT $ do
+      res <- http signedreq manager
+      runConduit $ responseBody res .| mapM_C print
