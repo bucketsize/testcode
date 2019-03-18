@@ -16,10 +16,20 @@ import System.Environment
 import Network.Connection
 import Conduit
 
---authHost = "localhost:8000"
---apiHost = "localhost:8000"
-authHost = "api.twitter.com"
 apiHost  = "api.twitter.com"
+streamHost = "stream.twitter.com"
+
+twitProto = "https"
+
+twitTimelineUrl = twitProto
+  ++ "://"
+  ++ apiHost
+  ++ "/1.1/statuses/user_timeline.json?screen_name=" ++ name
+
+twitFilterUrl = twitProto
+  ++ "://"
+  ++ streamHost
+  ++ "/1.1/statuses/filter.json?track="
 
 noSSLVerifyManager :: IO Manager
 noSSLVerifyManager =
@@ -56,18 +66,16 @@ instance FromJSON Tweet
 instance ToJSON Tweet
 
 timeline name = do
-    req  <- parseUrlThrow $ "https://"++ apiHost ++"/1.1/statuses/user_timeline.json?screen_name=" ++ name
+    req  <- parseUrlThrow $ twitTimelineURl name
     auth <- twitOAuth
     cred <- twitCred
     signedreq <- signOAuth auth cred req
-    -- manager <- newManager tlsManagerSettings
     manager <- noSSLVerifyManager
     res <- httpLbs signedreq manager
     L8.putStrLn $ responseBody res
-    --return $ eitherDecode $ responseBody res
 
-timeline2 name = do
-    req  <- parseUrlThrow $ "https://"++ apiHost ++"/1.1/statuses/user_timeline.json?screen_name=" ++ name
+twitTimeline name = do
+    req  <- parseUrlThrow $ twitTimelineURl name
     auth <- twitOAuth
     cred <- twitCred
     signedreq <- signOAuth auth cred req
@@ -76,3 +84,14 @@ timeline2 name = do
     runResourceT $ do
       res <- http signedreq manager
       runConduit $ responseBody res .| mapM_C print
+
+twitFilter name = do
+    req  <- parseUrlThrow $ twitTimelineUrl name
+    auth <- twitOAuth
+    cred <- twitCred
+    signedreq <- signOAuth auth cred req
+    -- manager <- newManager tlsManagerSettings
+    manager <- noSSLVerifyManager
+    runResourceT $ do
+      res <- http signedreq manager
+      runConduit $ responseBody res .| mapM_C (\x -> IO ())
