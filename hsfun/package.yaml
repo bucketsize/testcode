@@ -36,6 +36,7 @@ dependencies:
 - authenticate-oauth
 - connection
 - conduit
+- primitive
 
 library:
   source-dirs: src

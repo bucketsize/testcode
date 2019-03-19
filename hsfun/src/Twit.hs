@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ExtendedDefaultRules #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+
 module Twit where
 
 import Data.ByteString (ByteString)
@@ -15,16 +17,18 @@ import qualified Data.ByteString.Char8 as C8
 import System.Environment
 import Network.Connection
 import Conduit
+import qualified Data.Text as T
+import Data.Text.Encoding
+import TwitData
 
 apiHost  = "api.twitter.com"
 streamHost = "stream.twitter.com"
-
 twitProto = "https"
 
 twitTimelineUrl = twitProto
   ++ "://"
   ++ apiHost
-  ++ "/1.1/statuses/user_timeline.json?screen_name=" ++ name
+  ++ "/1.1/statuses/user_timeline.json?screen_name="
 
 twitFilterUrl = twitProto
   ++ "://"
@@ -45,7 +49,7 @@ twitOAuth = do
   key <- getEnv "TwitConKey"
   sec <- getEnv "TwitConSec"
   return newOAuth
-    { oauthServerName      = authHost
+    { oauthServerName      = apiHost
     , oauthConsumerKey     = C8.pack key
     , oauthConsumerSecret  = C8.pack sec
     }
@@ -58,15 +62,15 @@ twitCred = do
     (C8.pack tok)
     (C8.pack sec)
 
-data Tweet = Tweet
-  { text :: !Text
-  , created_at :: !UTCTime
+data MinTweet = MinTweet
+  { text        :: Text
+  , created_at  :: Text
   } deriving (Show, Generic)
-instance FromJSON Tweet
-instance ToJSON Tweet
+instance FromJSON MinTweet
+instance ToJSON MinTweet
 
 timeline name = do
-    req  <- parseUrlThrow $ twitTimelineURl name
+    req  <- parseUrlThrow $ twitTimelineUrl ++ name
     auth <- twitOAuth
     cred <- twitCred
     signedreq <- signOAuth auth cred req
@@ -75,7 +79,7 @@ timeline name = do
     L8.putStrLn $ responseBody res
 
 twitTimeline name = do
-    req  <- parseUrlThrow $ twitTimelineURl name
+    req  <- parseUrlThrow $ twitTimelineUrl ++ name
     auth <- twitOAuth
     cred <- twitCred
     signedreq <- signOAuth auth cred req
@@ -83,15 +87,32 @@ twitTimeline name = do
     manager <- noSSLVerifyManager
     runResourceT $ do
       res <- http signedreq manager
-      runConduit $ responseBody res .| mapM_C print
+      runConduit $ responseBody res .| mapM_C (lift . print)
 
 twitFilter name = do
-    req  <- parseUrlThrow $ twitTimelineUrl name
+    req  <- parseUrlThrow $ twitFilterUrl ++ name
     auth <- twitOAuth
     cred <- twitCred
     signedreq <- signOAuth auth cred req
-    -- manager <- newManager tlsManagerSettings
     manager <- noSSLVerifyManager
     runResourceT $ do
       res <- http signedreq manager
-      runConduit $ responseBody res .| mapM_C (\x -> IO ())
+      lift $ print $ responseStatus res
+      lift $ mapM_ (\h -> print h) $ responseHeaders res
+      -- runConduit $ responseBody res .| sinkFile "/var/tmp/tw-filter"
+      runConduit
+        $ responseBody res
+        .| mapMC (\s ->  do
+            -- lift $ C8.putStrLn s
+            return $ parseTweet s)
+        .| mapM_C (\s ->  do
+            case s of
+              Right x ->
+                lift $ putStrLn $ text (x :: Tweet)
+              Left  e ->
+                lift $ print e
+           )
+
+parseTweet :: ByteString -> Either String Tweet
+parseTweet jsons = eitherDecodeStrict jsons
+
