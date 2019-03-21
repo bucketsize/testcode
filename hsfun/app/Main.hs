@@ -1,23 +1,50 @@
 {-# LANGUAGE OverloadedStrings #-}
-import System.Environment (getArgs)
-import Twit (timeline, twitFilter)
 
--- curl -XPOST https://api.twitter.com/oauth2/token?grant_type=client_credentials -H "authorization:Basic blpkNlNibDhtU1ZCNkl4cDBvTHRJTVF5UTpvWEtxMDNiSmlGbGhnMVJROWxMRmF6M1U1NnF5ajUyZHlVVFZTb01rWkx6bWl0bmFuOQ=="
---
--- main :: IO ()
--- main = do
+import System.Environment (getArgs)
+import Net
+import Text.XML.HXT.Core
+import Text.HandsomeSoup
+import qualified Data.ByteString.Char8 as C8
+import Twit (twitTimeline, twitFilter, twitUserLookup)
+
+-- main1 = do
+--   print("hllo")
+--   print(fact 4)
+--   readOFile "Lib.hs"
+--   readAFile "main.hs"
+--   withAFile "main.hs" ReadMode (\handle -> do
+--     contents <- hGetContents handle
+--     putStr "\n\n::in lambda::\n\n"
+--     putStr contents)
+
+-- main2 = do
 --   args <- getArgs
 --   case args of
 --          [method, url] -> do
---             (r, t1, t4) <- httpDo (method, url)
---             print (diffUTCTime t4 t1)
+--             httpDo (method, url)
 
-main :: IO ()
-main = do
+-- main3 = do
+--   args <- getArgs
+--   case args of
+--     [method, url] -> do
+--       (r, _, _) <- httpDo (method, url)
+--       let doc = readString [withWarnings no] (C8.unpack r)
+--       urls <- runX $ doc >>> css "url" /> getText
+--       putStrLn(head urls)
+
+main4 = do
   args <- getArgs
   case args of
-    (t:_) -> do
-      print $ "topic: " ++ t
-      twitFilter t
+    (command:q:_) -> do
+      case command of
+        "lookupUser" -> do
+          print $ "lookupUser: " ++ q
+          twitUserLookup q
+        "filter" -> do
+          print $ "filter: " ++ q
+          twitFilter q
     [] -> do
-      twitFilter "AcheDin"
+      putStrLn "lookupUser <queryString> | filter <queryString>"
+
+main :: IO ()
+main = main4

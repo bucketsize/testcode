@@ -19,21 +19,14 @@ import Network.Connection
 import Conduit
 import qualified Data.Text as T
 import Data.Text.Encoding
+import Data.List.Split
+import Data.List
+import qualified Data.Map.Strict as Map
 import TwitData
 
-apiHost  = "api.twitter.com"
-streamHost = "stream.twitter.com"
-twitProto = "https"
-
-twitTimelineUrl = twitProto
-  ++ "://"
-  ++ apiHost
-  ++ "/1.1/statuses/user_timeline.json?screen_name="
-
-twitFilterUrl = twitProto
-  ++ "://"
-  ++ streamHost
-  ++ "/1.1/statuses/filter.json?track="
+twitTimelineUrl   = "https://api.twitter.com/1.1/statuses/user_timeline.json?"
+twitFilterUrl     = "https://stream.twitter.com/1.1/statuses/filter.json?"
+twitUserLookupUrl = "https://api.twitter.com/1.1/users/lookup.json?"
 
 noSSLVerifyManager :: IO Manager
 noSSLVerifyManager =
@@ -49,7 +42,7 @@ twitOAuth = do
   key <- getEnv "TwitConKey"
   sec <- getEnv "TwitConSec"
   return newOAuth
-    { oauthServerName      = apiHost
+    { oauthServerName      = "api.twitter.com"
     , oauthConsumerKey     = C8.pack key
     , oauthConsumerSecret  = C8.pack sec
     }
@@ -62,14 +55,7 @@ twitCred = do
     (C8.pack tok)
     (C8.pack sec)
 
-data MinTweet = MinTweet
-  { text        :: Text
-  , created_at  :: Text
-  } deriving (Show, Generic)
-instance FromJSON MinTweet
-instance ToJSON MinTweet
-
-timeline name = do
+twitTimeline name = do
     req  <- parseUrlThrow $ twitTimelineUrl ++ name
     auth <- twitOAuth
     cred <- twitCred
@@ -78,19 +64,47 @@ timeline name = do
     res <- httpLbs signedreq manager
     L8.putStrLn $ responseBody res
 
-twitTimeline name = do
-    req  <- parseUrlThrow $ twitTimelineUrl ++ name
+splitQE qe =
+  let qis = splitOn "=" qe
+      k = qis !! 0
+      v = qis !! 1
+  in (k, v)
+
+splitQS qs = Map.fromList
+  $ map splitQE
+  $ splitOn "&" qs
+
+joinQs qm = intercalate "&" $
+  Map.mapWithKey (\k v acc -> k ++ "=" ++ v ) qm
+
+twitUserLookup query = do
+    req  <- parseUrlThrow $ twitUserLookupUrl ++ query
     auth <- twitOAuth
     cred <- twitCred
     signedreq <- signOAuth auth cred req
-    -- manager <- newManager tlsManagerSettings
     manager <- noSSLVerifyManager
-    runResourceT $ do
-      res <- http signedreq manager
-      runConduit $ responseBody res .| mapM_C (lift . print)
+    res <- httpLbs signedreq manager
+    -- L8.putStrLn $ responseBody res
+    let users = parseUsers $ responseBody res
+    return users
 
-twitFilter name = do
-    req  <- parseUrlThrow $ twitFilterUrl ++ name
+twitSnToId query = do
+    let qm = splitQS query
+    let sn = Map.lookup "follow" qm
+    case sn of
+      Just sns -> do
+        users <- twitUserLookup sns
+        case users of
+          Left us -> do
+            let ids = intercalate ","
+              $ map (\ui -> id (ui ::User)) us
+            Map.insert "follow" ids qm
+            return $ joinQS qm
+      Nothing -> do
+        return query
+
+twitFilter query = do
+    req  <- parseUrlThrow $ twitFilterUrl ++ query
     auth <- twitOAuth
     cred <- twitCred
     signedreq <- signOAuth auth cred req
@@ -112,6 +126,9 @@ twitFilter name = do
               Left  e ->
                 lift $ print e
            )
+
+parseUsers :: L8.ByteString -> Either String [User]
+parseUsers jsons = eitherDecode jsons
 
 parseTweet :: ByteString -> Either String Tweet
 parseTweet jsons = eitherDecodeStrict jsons

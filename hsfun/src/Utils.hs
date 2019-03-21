@@ -1,27 +1,52 @@
 module Utils where
 
-import System.Environment (getArgs)
+import Data.Char
 import System.IO
-import Data.List (lines)
 import Text.XML.HXT.Core
 import Text.HandsomeSoup
 import qualified Data.ByteString.Char8 as C8
 
-isEOL :: Char -> Bool
-isEOL c = c == '\r' || c == '\n'
+fact :: Int -> Int
+fact 0 = 1
+fact n = n*fact (n-1)
 
-splitOn :: (Char->Bool) -> String -> [String]
-splitOn onPredicate cs =
-    let (p, s) = break onPredicate cs
-     in p: case s of
-        ('\r':'\n':rest) -> splitOn onPredicate rest
-        ('\r':rest)      -> splitOn onPredicate rest
-        ('\n':rest)      -> splitOn onPredicate rest
-        _                -> []
+caps :: IO ()
+caps = do
+  contents <- getContents
+  putStr (map toUpper contents)
 
-joinWith :: String -> [String] -> String
-joinWith t [] = ""
-joinWith t (x:xs) = x ++ t ++ joinWith t xs
+shortLinesOnly :: String -> String
+shortLinesOnly input =
+    let allLines = lines input
+        shortLines = filter (\line -> length line < 10) allLines
+        result = unlines shortLines
+    in  result
+
+shLnOnly :: String -> String
+shLnOnly = unlines . filter (\l -> length l < 10) . lines
+
+sLns :: String -> String
+sLns = unlines . filter ((<10) . length) . lines
+
+readOFile :: FilePath -> IO ()
+readOFile path = do
+  handle <- openFile path ReadMode
+  contents <- hGetContents handle
+  putStr contents
+  hClose handle
+
+readAFile :: FilePath -> IO ()
+readAFile path = do
+    withFile path ReadMode (\handle -> do
+        contents <- hGetContents handle
+        putStr contents)
+
+withAFile :: FilePath -> IOMode -> (Handle -> IO a) -> IO a
+withAFile path mode fn= do
+  handle <- openFile path mode
+  r <- fn handle
+  hClose handle
+  return r
 
 mergeSort :: (Ord a) => [a] -> [a]
 mergeSort [] = []
@@ -35,7 +60,6 @@ printPairs fn (h:[]) = putStrLn (fn h)
 printPairs fn (h:hs) = do
   printPairs fn [h]
   printPairs fn hs
-
 
 getXmlByXpath r = do
   let doc = readString [withWarnings no] (C8.unpack r)

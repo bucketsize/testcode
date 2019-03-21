@@ -45,12 +45,15 @@ data Tweet = Tweet
 
 data Entities = Entities
   { hashtags :: Array Hashtag
-  , urls :: Array String
+  , urls :: Array EUrl
   -- , userMentions :: Array String
   , symbols :: Array String
   , media :: Maybe (Array Media)
   } deriving (Show, Generic)
 
+data EUrl = EUrl
+  { url :: String
+  }deriving (Show, Generic)
 data Hashtag = Hashtag
   { text :: String
   , indices :: Array Int
@@ -104,10 +107,10 @@ data ExtendedEntities = ExtendedEntities
   } deriving (Show, Generic)
 
 data User = User
-  { id :: Float
+  { id :: Integer
   -- , idStr :: String
   , name :: String
-  -- , screenName :: String
+  , screen_name :: String
   , location :: Maybe String
   , url :: Maybe String
   , description :: String
@@ -140,10 +143,12 @@ data User = User
   -- , profileBannerURL :: String
   -- , defaultProfile :: Bool
   -- , defaultProfileImage :: Bool
-  , following :: Maybe String
+  , following :: Maybe Bool
   -- , followRequestSent :: Maybe String
-  , notifications :: Maybe String
+  , notifications :: Maybe Bool
   } deriving (Show, Generic)
+
+type Users = Array User
 
 data QuotedStatusPermalink = QuotedStatusPermalink
   { url :: String
@@ -153,6 +158,7 @@ data QuotedStatusPermalink = QuotedStatusPermalink
 
 instance FromJSON Tweet
 instance FromJSON Entities
+instance FromJSON EUrl
 instance FromJSON Hashtag
 instance FromJSON Media
 instance FromJSON QuotedStatus

@@ -37,6 +37,7 @@ dependencies:
 - connection
 - conduit
 - primitive
+- containers
 
 library:
   source-dirs: src
