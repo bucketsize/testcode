@@ -23,6 +23,7 @@ import Data.List.Split
 import Data.List
 import qualified Data.Map.Strict as Map
 import TwitData
+import qualified TwitData as TW
 
 twitTimelineUrl   = "https://api.twitter.com/1.1/statuses/user_timeline.json?"
 twitFilterUrl     = "https://stream.twitter.com/1.1/statuses/filter.json?"
@@ -76,9 +77,10 @@ splitQS qs = Map.fromList
   $ map splitQE
   $ splitOn "&" qs
 
--- joinQS :: Map.Map String String -> String
--- joinQS qm = intercalate "&" $
---   Map.mapWithKey (\k v acc -> k ++ "=" ++ v ) qm
+joinQS :: Map.Map String String -> String
+joinQS qm = intercalate "&"
+  $ map (\(k, v) -> k ++ "=" ++ v )
+  $ Map.toList qm
 
 twitUserLookup query = do
     req  <- parseUrlThrow $ twitUserLookupUrl ++ query
@@ -100,25 +102,28 @@ twitUserLookup query = do
                    ]) us
     return users
 
--- twitSnToId query = do
---     let qm = splitQS query
---     let sn = Map.lookup "follow" qm
---     case sn of
---       Just sns -> do
---         users <- twitUserLookup sns
---         return (case users of
---           Right us -> do
---             let ids = "foo,id" --intercalate "," $ map (\ui -> id (ui :: User)) us
---             Map.insert "follow" ids qm
---             joinQS qm
---           Left e -> do
---             print "lookup failed"
---             query)
---       Nothing -> do
---         query
+twitSnToId :: String -> IO String
+twitSnToId query = do
+    let qm = splitQS query
+    let sn = Map.lookup "follow" qm
+    -- print $ query
+    -- print $ qm
+    -- print $ sn
+    case sn of
+      Just sns -> do
+        users <- twitUserLookup $ "screen_name="++sns
+        return $ case users of
+          Right us ->
+            let ids = intercalate "," $ map (\ui -> show $ TW.id (ui :: User)) us
+                qm1 = Map.insert "follow" ids qm
+            in joinQS qm1
+          Left e -> query
+      Nothing -> do
+        return query
 
 twitFilter query = do
-    req  <- parseUrlThrow $ twitFilterUrl ++ query
+    query1 <- twitSnToId query
+    req  <- parseUrlThrow $ twitFilterUrl ++ query1
     auth <- twitOAuth
     cred <- twitCred
     signedreq <- signOAuth auth cred req
@@ -136,7 +141,13 @@ twitFilter query = do
         .| mapM_C (\s ->  do
             case s of
               Right x ->
-                lift $ putStrLn $ text (x :: Tweet)
+                lift $ putStrLn
+                  $ intercalate "\n" [ "<Tweet>"
+                                     , TW.id_str ((TW.user (x :: Tweet)) :: User)
+                                     , TW.screen_name $ TW.user (x :: Tweet)
+                                     , TW.text (x :: Tweet)
+                                     , "</Tweet>"
+                                     ]
               Left  e ->
                 lift $ print e
            )
