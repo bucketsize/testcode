@@ -38,11 +38,13 @@ main4 = do
     (command:q:_) -> do
       case command of
         "lookupUser" -> do
-          print $ "lookupUser: " ++ q
+          putStrLn $ "lookupUser: " ++ q
           twitUserLookup q
+          putStrLn "done"
         "filter" -> do
-          print $ "filter: " ++ q
+          putStrLn $ "filter: " ++ q
           twitFilter q
+          putStrLn "done"
     [] -> do
       putStrLn "lookupUser <queryString> | filter <queryString>"
 

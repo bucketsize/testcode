@@ -12,7 +12,7 @@ import Data.Aeson (FromJSON, ToJSON, Object)
 data Tweet = Tweet
   { created_at :: String
   , id :: Float
-  -- , idStr :: String
+  , id_str :: String
   , text :: String
   , source :: String
   , truncated :: Bool
@@ -31,10 +31,10 @@ data Tweet = Tweet
   -- , quotedStatus :: QuotedStatus
   -- , quotedStatusPermalink :: QuotedStatusPermalink
   -- , isQuoteStatus :: Bool
-  -- , quoteCount :: Int
-  -- , replyCount :: Int
-  -- , retweetCount :: Int
-  -- , favoriteCount :: Int
+  , quote_count :: Int
+  , reply_count :: Int
+  , retweet_count :: Int
+  , favorite_count :: Int
   , entities :: Entities
   , favorited :: Bool
   , retweeted :: Bool
@@ -108,16 +108,16 @@ data ExtendedEntities = ExtendedEntities
 
 data User = User
   { id :: Integer
-  -- , idStr :: String
+  , id_str :: String
   , name :: String
   , screen_name :: String
   , location :: Maybe String
   , url :: Maybe String
-  , description :: String
+  , description :: Maybe String
   -- , translatorType :: String
   , protected :: Bool
   , verified :: Bool
-  -- , followersCount :: Int
+  , followers_count :: Int
   -- , friendsCount :: Int
   -- , listedCount :: Int
   -- , favouritesCount :: Int

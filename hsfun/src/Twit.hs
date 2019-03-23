@@ -64,18 +64,21 @@ twitTimeline name = do
     res <- httpLbs signedreq manager
     L8.putStrLn $ responseBody res
 
+splitQE :: String -> (String, String)
 splitQE qe =
   let qis = splitOn "=" qe
       k = qis !! 0
       v = qis !! 1
   in (k, v)
 
+splitQS :: String -> Map.Map String String
 splitQS qs = Map.fromList
   $ map splitQE
   $ splitOn "&" qs
 
-joinQs qm = intercalate "&" $
-  Map.mapWithKey (\k v acc -> k ++ "=" ++ v ) qm
+-- joinQS :: Map.Map String String -> String
+-- joinQS qm = intercalate "&" $
+--   Map.mapWithKey (\k v acc -> k ++ "=" ++ v ) qm
 
 twitUserLookup query = do
     req  <- parseUrlThrow $ twitUserLookupUrl ++ query
@@ -86,22 +89,33 @@ twitUserLookup query = do
     res <- httpLbs signedreq manager
     -- L8.putStrLn $ responseBody res
     let users = parseUsers $ responseBody res
+    case users of
+      Right us -> mapM_ (\u ->
+        putStrLn $ intercalate ":" [ screen_name (u :: User)
+                   , name (u :: User)
+                   , id_str (u :: User)
+                   , case location (u :: User) of
+                       Just l -> l
+                       Nothing-> "Unknown"
+                   ]) us
     return users
 
-twitSnToId query = do
-    let qm = splitQS query
-    let sn = Map.lookup "follow" qm
-    case sn of
-      Just sns -> do
-        users <- twitUserLookup sns
-        case users of
-          Left us -> do
-            let ids = intercalate ","
-              $ map (\ui -> id (ui ::User)) us
-            Map.insert "follow" ids qm
-            return $ joinQS qm
-      Nothing -> do
-        return query
+-- twitSnToId query = do
+--     let qm = splitQS query
+--     let sn = Map.lookup "follow" qm
+--     case sn of
+--       Just sns -> do
+--         users <- twitUserLookup sns
+--         return (case users of
+--           Right us -> do
+--             let ids = "foo,id" --intercalate "," $ map (\ui -> id (ui :: User)) us
+--             Map.insert "follow" ids qm
+--             joinQS qm
+--           Left e -> do
+--             print "lookup failed"
+--             query)
+--       Nothing -> do
+--         query
 
 twitFilter query = do
     req  <- parseUrlThrow $ twitFilterUrl ++ query
