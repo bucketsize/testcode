@@ -137,16 +137,19 @@ twitFilter query = do
         $ responseBody res
         .| mapMC (\s ->  do
             -- lift $ C8.putStrLn s
+            lift $ storeTweet s
+            return s)
+        .| mapMC (\s ->  do
             return $ parseTweet s)
         .| mapM_C (\s ->  do
             case s of
               Right x ->
                 lift $ putStrLn
-                  $ intercalate "\n" [ "<Tweet>"
+                  $ intercalate "\n\t" [ "T--"
                                      , TW.id_str ((TW.user (x :: Tweet)) :: User)
                                      , TW.screen_name $ TW.user (x :: Tweet)
                                      , TW.text (x :: Tweet)
-                                     , "</Tweet>"
+                                     , "--T"
                                      ]
               Left  e ->
                 lift $ print e
@@ -158,3 +161,6 @@ parseUsers jsons = eitherDecode jsons
 parseTweet :: ByteString -> Either String Tweet
 parseTweet jsons = eitherDecodeStrict jsons
 
+storeTweet :: ByteString -> IO ()
+storeTweet tweet = do
+  putStrLn "stored tweet"
