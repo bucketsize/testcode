@@ -156,6 +156,10 @@ data QuotedStatusPermalink = QuotedStatusPermalink
   , display :: String
   } deriving (Show, Generic)
 
+data TwitStat = TwitStat
+  { count :: Int
+  } deriving (Show)
+
 instance FromJSON Tweet
 instance FromJSON Entities
 instance FromJSON EUrl

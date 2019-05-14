@@ -5,7 +5,9 @@ import Net
 import Text.XML.HXT.Core
 import Text.HandsomeSoup
 import qualified Data.ByteString.Char8 as C8
+import Control.Monad.State
 import Twit (twitTimeline, twitFilter, twitUserLookup)
+import System.Process
 
 -- main1 = do
 --   print("hllo")

@@ -24,6 +24,7 @@ import Data.List
 import qualified Data.Map.Strict as Map
 import TwitData
 import qualified TwitData as TW
+import Control.Monad.State
 
 twitTimelineUrl   = "https://api.twitter.com/1.1/statuses/user_timeline.json?"
 twitFilterUrl     = "https://stream.twitter.com/1.1/statuses/filter.json?"
@@ -56,6 +57,7 @@ twitCred = do
     (C8.pack tok)
     (C8.pack sec)
 
+twitTimeline :: String -> IO ()
 twitTimeline name = do
     req  <- parseUrlThrow $ twitTimelineUrl ++ name
     auth <- twitOAuth
@@ -121,6 +123,12 @@ twitSnToId query = do
       Nothing -> do
         return query
 
+
+runtwitFilter :: String -> StateT TwitStat IO ()
+runtwitFilter query = do
+  runStateT (twitFilter query) (TwitStat 0)
+
+twitFilter :: String -> StateT TwitStat IO ()
 twitFilter query = do
     query1 <- twitSnToId query
     req  <- parseUrlThrow $ twitFilterUrl ++ query1
@@ -137,19 +145,19 @@ twitFilter query = do
         $ responseBody res
         .| mapMC (\s ->  do
             -- lift $ C8.putStrLn s
-            lift $ storeTweet s
+            lift $ storeRawTweet s
             return s)
         .| mapMC (\s ->  do
-            return $ parseTweet s)
+            let t =  parseTweet s
+            lift $ updateState t
+            return t)
         .| mapM_C (\s ->  do
             case s of
               Right x ->
                 lift $ putStrLn
-                  $ intercalate "\n\t" [ "T--"
-                                     , TW.id_str ((TW.user (x :: Tweet)) :: User)
+                  $ intercalate ", " [ TW.id_str ((TW.user (x :: Tweet)) :: User)
                                      , TW.screen_name $ TW.user (x :: Tweet)
                                      , TW.text (x :: Tweet)
-                                     , "--T"
                                      ]
               Left  e ->
                 lift $ print e
@@ -161,6 +169,10 @@ parseUsers jsons = eitherDecode jsons
 parseTweet :: ByteString -> Either String Tweet
 parseTweet jsons = eitherDecodeStrict jsons
 
-storeTweet :: ByteString -> IO ()
-storeTweet tweet = do
+storeRawTweet :: ByteString -> IO ()
+storeRawTweet tweet = do
   putStrLn "stored tweet"
+
+updateState :: Tweet -> StateT TwitStat IO ()
+updateState t = do
+  state (\s -> ((), s {count = count s + 1}))

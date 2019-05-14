@@ -38,6 +38,9 @@ dependencies:
 - conduit
 - primitive
 - containers
+- dbus
+- mtl
+- process
 
 library:
   source-dirs: src
