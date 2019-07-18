@@ -124,19 +124,20 @@ twitSnToId query = do
         return query
 
 
-runtwitFilter :: String -> StateT TwitStat IO ()
-runtwitFilter query = do
-  runStateT (twitFilter query) (TwitStat 0)
+runTwitFilter :: String -> IO ()
+runTwitFilter query = do
+  (v, s) <- runStateT (twitFilter query) (TwitStat 0)
+  print s
 
 twitFilter :: String -> StateT TwitStat IO ()
 twitFilter query = do
-    query1 <- twitSnToId query
-    req  <- parseUrlThrow $ twitFilterUrl ++ query1
-    auth <- twitOAuth
-    cred <- twitCred
-    signedreq <- signOAuth auth cred req
-    manager <- noSSLVerifyManager
-    runResourceT $ do
+    query1 <- lift $ twitSnToId query
+    req  <- lift $ parseUrlThrow $ twitFilterUrl ++ query1
+    auth <- lift $ twitOAuth
+    cred <- lift $ twitCred
+    signedreq <- lift $ signOAuth auth cred req
+    manager <- lift $ noSSLVerifyManager
+    lift $ runResourceT $ do
       res <- http signedreq manager
       lift $ print $ responseStatus res
       lift $ mapM_ (\h -> print h) $ responseHeaders res
@@ -144,24 +145,16 @@ twitFilter query = do
       runConduit
         $ responseBody res
         .| mapMC (\s ->  do
-            -- lift $ C8.putStrLn s
             lift $ storeRawTweet s
             return s)
         .| mapMC (\s ->  do
             let t =  parseTweet s
-            lift $ updateState t
             return t)
-        .| mapM_C (\s ->  do
-            case s of
-              Right x ->
-                lift $ putStrLn
-                  $ intercalate ", " [ TW.id_str ((TW.user (x :: Tweet)) :: User)
-                                     , TW.screen_name $ TW.user (x :: Tweet)
-                                     , TW.text (x :: Tweet)
-                                     ]
-              Left  e ->
-                lift $ print e
-           )
+        .| mapMC (\t ->  do
+           -- lift $ updateState t
+            return t)
+        .| mapM_C (\t ->  do
+            lift $ printTweet t)
 
 parseUsers :: L8.ByteString -> Either String [User]
 parseUsers jsons = eitherDecode jsons
@@ -176,3 +169,17 @@ storeRawTweet tweet = do
 updateState :: Tweet -> StateT TwitStat IO ()
 updateState t = do
   state (\s -> ((), s {count = count s + 1}))
+
+printTweet :: Either String Tweet -> IO ()
+printTweet t = do
+  case t of
+    Right x ->
+      putStrLn
+        $ intercalate
+          ", "
+          [ TW.id_str ((TW.user (x :: Tweet)) :: User)
+          , TW.screen_name $ TW.user (x :: Tweet)
+          , TW.text (x :: Tweet)
+          ]
+    Left  e ->
+      print e

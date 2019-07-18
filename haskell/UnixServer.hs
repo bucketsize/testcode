@@ -2,6 +2,7 @@ import Control.Monad
 import System.IO
 import System.Posix.Files
 import Hw.Utils
+import System.Process
 
 ipcpipe = "/tmp/hw-sd.fifo"
 

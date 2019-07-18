@@ -1,0 +1,10 @@
+(defn fnfoo [x &y]
+(prn (class y)))
+(defn fnfoo [x & y]
+(prn (class y)))
+(fnfoo)
+(fnfoo "ay")
+(fnfoo "ay" "ay")
+(fnfoo "ay" (fn [x] ()))
+(doc map)
+(doc reify)

@@ -6,7 +6,7 @@ import Text.XML.HXT.Core
 import Text.HandsomeSoup
 import qualified Data.ByteString.Char8 as C8
 import Control.Monad.State
-import Twit (twitTimeline, twitFilter, twitUserLookup)
+import Twit (twitTimeline, runTwitFilter, twitUserLookup)
 import System.Process
 
 -- main1 = do
@@ -45,7 +45,7 @@ main4 = do
           putStrLn "done"
         "filter" -> do
           putStrLn $ "filter: " ++ q
-          twitFilter q
+          runTwitFilter q
           putStrLn "done"
     [] -> do
       putStrLn "lookupUser <queryString> | filter <queryString>"
