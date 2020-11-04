@@ -2,9 +2,14 @@ module Utils where
 
 import Data.Char
 import System.IO
+import Control.Monad
 import Text.XML.HXT.Core
 import Text.HandsomeSoup
 import qualified Data.ByteString.Char8 as C8
+import System.Environment (getArgs)
+import Data.List (lines)
+--import System.IO.Streams.File
+
 
 fact :: Int -> Int
 fact 0 = 1
@@ -28,18 +33,48 @@ shLnOnly = unlines . filter (\l -> length l < 10) . lines
 sLns :: String -> String
 sLns = unlines . filter ((<10) . length) . lines
 
-readOFile :: FilePath -> IO ()
-readOFile path = do
+readFileContent :: FilePath -> IO String
+readFileContent path = do
   handle <- openFile path ReadMode
   contents <- hGetContents handle
-  putStr contents
   hClose handle
+  return contents
 
-readAFile :: FilePath -> IO ()
-readAFile path = do
+withFileRead :: FilePath -> IO ()
+withFileRead path = do
     withFile path ReadMode (\handle -> do
         contents <- hGetContents handle
         putStr contents)
+
+readFileLnC :: Handle -> (String -> ()) -> IO ()
+readFileLnC h fn = do
+  eof <- hIsEOF h
+  if eof
+     then return ()
+     else do
+       (fmap fn) (hGetLine h)
+       readFileLnC h fn
+
+readFileLn :: FilePath -> (String -> ()) -> IO ()
+readFileLn path fn = do
+  h <- openFile path ReadMode
+  readFileLnC h fn
+
+readFileLnsC :: Handle -> [String] -> IO [String]
+readFileLnsC h acc = do
+  eof <- hIsEOF h
+  if eof
+     then
+      return acc
+     else do
+       l <- hGetLine h
+       readFileLnsC h (acc ++ [l])
+
+readFileLns :: FilePath -> IO [String]
+readFileLns path = do
+  h <- openFile path ReadMode
+  readFileLnsC h []
+
 
 withAFile :: FilePath -> IOMode -> (Handle -> IO a) -> IO a
 withAFile path mode fn= do
@@ -65,3 +100,17 @@ getXmlByXpath r = do
   let doc = readString [withWarnings no] (C8.unpack r)
   urls <- runX $ doc >>> css "url" /> getText
   return (urls)
+
+isEOL :: Char -> Bool
+isEOL c = c == '\r' || c == '\n'
+
+joinLines :: [String] -> String
+joinLines [] = ""
+joinLines (x:xs) = x ++ "\n" ++ joinLines xs
+
+splitOn :: Char -> String -> [String]
+splitOn c cs =
+  let (h,r) = break (==c) cs
+    in h: case r of
+      "" -> []
+      _  -> splitOn c (tail r)

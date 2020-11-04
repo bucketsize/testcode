@@ -38,14 +38,25 @@ dependencies:
 - conduit
 - primitive
 - containers
+- regex-tdfa
+- extra
 
 library:
   source-dirs: src
 
 executables:
-  hsfun-exe:
+  twcli:
     main:                Main.hs
-    source-dirs:         app
+    source-dirs:         app/twcli
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - hsfun
+  sysmon:
+    main:                Main.hs
+    source-dirs:         app/sys_mon
     ghc-options:
     - -threaded
     - -rtsopts
