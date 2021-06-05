@@ -110,7 +110,7 @@ divby4 y   = (/y)    -- curry foo
 -- higher order
 map' :: (a -> b) -> [a] -> [b]
 filter' :: (a -> bool) -> [a] -> [a]
-fold`' :: (s a -> s) -> [a] -> s
+fold' :: (s a -> s) -> [a] -> s
 
 -- Types
 data Foo = Fizz Int
@@ -160,7 +160,7 @@ class Functor f where
 instance Functor [a] where
   fmap :: (a -> b) -> [a] -> [b]
 
-instance Functor Either a where
+instance Functor Either a where -- (Either a) is the functor
   fmap :: (b -> c) -> Either a b -> Either a c
 
 -- (->) a b => (a -> b)
@@ -205,4 +205,36 @@ f <$> x = fmap f x
 -- type vs. newtype vs. data wrt. (applicative) functors
 
 -- Monoids
+--  Is a combination of a binary function and it's identity value
+class Monoid m where  
+    mempty :: m  
+    mappend :: m -> m -> m  
+    mconcat :: [m] -> m  
+    mconcat = foldr mappend mempty
 
+-- instances
+(++) []
+(*) 1
+
+    instance Monoid [a] where  
+        mempty = []  
+        mappend = (++)  
+
+-- Monads
+--  Are applicative funtors that preceed applicative functors
+--  They wrap a value in a context.
+-- Ex: Maybe "Foo"
+
+class Monad m where
+  return :: a -> m a
+  (>>=) :: m a -> (a -> m b) -> m b
+  (>>) :: m a -> m b -> m b   -- default impl
+  x >> y = x >>= \_ -> y
+  fail :: String -> m a       -- default impl
+  fail msg = error msg
+
+instance Monad Maybe where
+  return x = Just x
+  Nothing >>= f = Nothing
+  Just x >>= f  = f x
+  fail _ = Nothing

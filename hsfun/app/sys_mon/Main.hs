@@ -1,9 +1,13 @@
-import SysFns
+{-# LANGUAGE OverloadedStrings #-}
+
+import System.Environment (getArgs)
 import System.Time.Extra
 import Control.Monad
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.MVar (newEmptyMVar, takeMVar, putMVar)
 
+import SysFns
+import SysCtl
 
 cpuUsageAg :: Float -> Float -> IO ()
 cpuUsageAg t z = do
@@ -14,7 +18,9 @@ cpuUsageAg t z = do
 
 
 main :: IO ()
-main = do
+main = main2
+
+main1 = do
   forkIO (do
     forever (do
         m <- memUsage
@@ -31,3 +37,17 @@ main = do
   forever (do
     threadDelay (1000000*60)
     )
+
+main2 = do
+  args <- getArgs
+  case args of
+    [a, q] -> do
+      if a == "fun" then do
+        let s = dispatch q
+        case s of
+          Just x  -> putStrLn("") -- FIXME
+          Nothing -> putStrLn("")
+      else
+        putStrLn("")
+    _ -> putStrLn("")
+
