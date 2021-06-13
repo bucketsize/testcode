@@ -44,6 +44,9 @@ dependencies:
 - transformers
 - vector
 - directory
+- http-types
+- http-client
+- http-client-tls
 
 library:
   source-dirs: src
@@ -76,7 +79,6 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    - -dynamic
     dependencies:
     - hsfun
 

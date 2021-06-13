@@ -34,13 +34,13 @@ data Slot =
     , available_capacity_dose2 :: Int
     , min_age_limit :: Int
     , vaccine :: String
-    , slots :: Array String
+    , slots :: [String]
     }
   deriving (Show, Generic)
 
 data Slots =
   Slots
-    { sessions :: Array Slot
+    { sessions :: [Slot]
     }
   deriving (Show, Generic)
 
@@ -78,7 +78,7 @@ data State =
 
 data States =
   States
-    { states :: Array State
+    { states :: [State]
     , ttl :: Int
     }
   deriving (Show, Read, Generic)
@@ -92,7 +92,7 @@ data District =
 
 data Districts =
   Districts
-    { districts :: Array District
+    { districts :: [District]
     , ttl :: Int
     }
   deriving (Show, Read, Generic)
@@ -111,13 +111,13 @@ data Center =
     , state_name :: String
     , district_name :: String
     , block_name :: String
-    , pincode :: String
-    , lat :: Int
-    , long :: Int
+    , pincode :: Int
+    , lat :: Float
+    , long :: Float
     , from :: String
     , to :: String
     , fee_type :: String
-    , vaccine_fees :: [VaccineFee]
+    , vaccine_fees :: Maybe [VaccineFee]
     , sessions :: [Session]
     }
   deriving (Show, Generic)
@@ -163,6 +163,8 @@ instance FromJSON Slot
 instance FromJSON Slots
 
 instance FromJSON Center
+
+instance FromJSON Centers
 
 instance FromJSON Session
 

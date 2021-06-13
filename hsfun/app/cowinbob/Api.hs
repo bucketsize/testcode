@@ -7,15 +7,22 @@ module Api where
 
 import ApiData
 import AppData
-import Conduit
 import Data.Aeson (decode, encode)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as C8
 import qualified Data.ByteString.Lazy.Char8 as L8
+import Data.List
+import Data.Time.Clock
+import Data.Time.Format
+import Data.Time.Format.ISO8601
+import Data.Time.LocalTime
 import Net
 import Network.Connection
-import Network.HTTP.Conduit
-import Web.Authenticate.OAuth
+import Network.HTTP.Client
+import Network.HTTP.Client.TLS
+import Network.HTTP.Types.Header
+import Network.HTTP.Types.Status
+import System.IO
 
 noSSLVerifyManager :: IO Manager
 noSSLVerifyManager =
@@ -42,14 +49,32 @@ gDistrictsUrl = gHost ++ "/v2/admin/location/districts"
 
 gSlotsUrl = gHost ++ "/v2/appointment/sessions/public/findByDistrict"
 
-gDebug = False
+gSlotsCalendarUrl =
+  gHost ++ "/v2/appointment/sessions/public/calendarByDistrict"
 
-logHttp :: Response L8.ByteString -> IO ()
-logHttp res = do
-  if gDebug
-    then (putStrLn (show (responseStatus res))) >>
-         (L8.putStrLn (responseBody res))
-    else putStrLn ""
+gDebug = True
+
+logger :: FilePath -> IO (String -> IO ())
+logger fn = do
+  handle <- openFile fn AppendMode
+  return
+    (\s -> do
+       utct <- getCurrentTime
+       let ist = utcToLocalTime (TimeZone 330 False "IST") utct
+       let time = iso8601Show ist
+       hPutStr handle time
+       hPutStr handle " - "
+       hPutStrLn handle s)
+
+logHttp :: Response L8.ByteString -> String
+logHttp res =
+  intercalate
+    " - "
+    [ (show (responseStatus res))
+    , if (statusCode (responseStatus res) > 399)
+        then (show (responseBody res))
+        else "<redacted: all ok>"
+    ]
 
 sendToTGChat :: String -> IO ()
 sendToTGChat s = do
@@ -57,7 +82,7 @@ sendToTGChat s = do
   let req = initReq {method = "GET"}
   manager <- noSSLVerifyManager
   res <- httpLbs req manager
-  logHttp res
+  putStrLn $ logHttp res
 
 requestOtp :: String -> IO (Maybe OtpRes)
 requestOtp m = do
@@ -67,7 +92,7 @@ requestOtp m = do
           {method = "POST", requestBody = RequestBodyLBS $ encode (OtpReq m)}
   manager <- noSSLVerifyManager
   res <- httpLbs req manager
-  logHttp res
+  putStrLn $ logHttp res
   let obj = decode (responseBody res) :: Maybe OtpRes
   return obj
 
@@ -81,7 +106,7 @@ validateOtp txnId otp = do
           }
   manager <- noSSLVerifyManager
   res <- httpLbs req manager
-  logHttp res
+  putStrLn $ logHttp res
   let obj = decode (responseBody res) :: Maybe OtpVRes
   return obj
 
@@ -91,7 +116,7 @@ getStates auth = do
   let req = initReq {method = "GET"}
   manager <- noSSLVerifyManager
   res <- httpLbs req manager
-  logHttp res
+  putStrLn $ logHttp res
   let obj = decode (responseBody res) :: Maybe States
   return obj
 
@@ -101,7 +126,7 @@ getDistricts auth stateId = do
   let req = initReq {method = "GET"}
   manager <- noSSLVerifyManager
   res <- httpLbs req manager
-  logHttp res
+  putStrLn $ logHttp res
   let obj = decode (responseBody res) :: Maybe Districts
   return obj
 
@@ -121,6 +146,27 @@ getSlotsByDistrict auth distId dateStr = do
           }
   manager <- noSSLVerifyManager
   res <- httpLbs req manager
-  logHttp res
+  putStrLn $ logHttp res
   let obj = decode (responseBody res) :: Maybe Slots
+  return obj
+
+getSlotsCalendarByDistrict :: AuthInfo -> Int -> String -> IO (Maybe Centers)
+getSlotsCalendarByDistrict auth distId dateStr = do
+  initReq <-
+    parseRequest
+      (gSlotsCalendarUrl ++
+       "?district_id=" ++ (show distId) ++ "&date=" ++ (show dateStr))
+  let req =
+        initReq
+          { method = "GET"
+          , requestHeaders =
+              [ packHeader
+                  ("Authorization", "Bearer " ++ (authTokn (auth :: AuthInfo)))
+              ]
+          }
+  manager <- noSSLVerifyManager
+  res <- httpLbs req manager
+  log <- logger "app.log"
+  log (logHttp res)
+  let obj = decode (responseBody res) :: Maybe Centers
   return obj

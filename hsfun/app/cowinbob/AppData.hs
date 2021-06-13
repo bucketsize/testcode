@@ -18,4 +18,7 @@ data SlotFilter =
     , feeType :: String
     , vaccineType :: String
     , searchDate :: String
+    , state :: String
+    , district :: String
     }
+  deriving (Show)
