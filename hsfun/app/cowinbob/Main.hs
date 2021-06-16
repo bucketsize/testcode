@@ -3,43 +3,30 @@
 {-# LANGUAGE ExtendedDefaultRules #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
-import Data.Aeson (FromJSON, Object, ToJSON, decode, encode)
-import Data.Foldable (toList)
-import Data.Primitive.Array
-import GHC.Generics
-
-import Data.List
-import Data.List.Split
-import qualified Data.Map.Strict as Map
-import qualified Data.Text as T
-import Data.Time.Clock (UTCTime)
-
 import Api
 import ApiData
 import AppData
+import Control.Concurrent (forkIO, threadDelay)
+import Control.Monad
+import Data.Aeson (FromJSON, Object, ToJSON, decode, encode)
+import qualified Data.ByteString.Lazy.Char8 as C
+import Data.Char (toLower)
+import Data.Foldable (toList)
+import Data.List
+import Data.List.Split
+import qualified Data.Map.Strict as Map
+import Data.Primitive.Array
+import qualified Data.Text as T
 import Data.Text (Text)
 import Data.Text.Encoding
+import Data.Time.Clock (UTCTime)
+import GHC.Generics
 import System.Environment
 import Text.Printf (printf)
-
+import Text.Regex.TDFA
 import Utils
 
-searchSlots :: SlotFilter -> IO ()
-searchSlots slotFilter = do
-  let auth = AuthInfo "" "" "efgh"
-  st <- lookupState (state slotFilter)
-  dt <- lookupDist st (district slotFilter)
-  mslots <-
-    getSlotsByDistrict
-      auth
-      (district_id (dt :: District))
-      (searchDate slotFilter)
-  case mslots of
-    Just aslot -> do
-      displaySlots slotFilter aslot
-    Nothing -> putStrLn "no data"
-
-searchSlotsCalendar :: SlotFilter -> IO ()
+searchSlotsCalendar :: SlotFilter -> IO ([Slot])
 searchSlotsCalendar slotFilter = do
   let auth = AuthInfo "" "" "efgh"
   st <- lookupState (state slotFilter)
@@ -50,43 +37,20 @@ searchSlotsCalendar slotFilter = do
       (district_id (dt :: District))
       (searchDate slotFilter)
   case mcenters of
-    Just acenters -> do
-      let aslots = Slots {sessions = centersToSlots (centers acenters)}
-      displaySlots slotFilter aslots
-    Nothing -> putStrLn "no data"
+    Just acenters -> return (centersToSlots (centers (acenters :: Centers)))
+    Nothing -> return []
 
-class Filterable t where
-  applyFilter :: SlotFilter -> t -> Bool
-
-instance Filterable Slot where
-  applyFilter slotFilter slot = dose1C && (vaxC && ageC && feeC)
-    where
-      dose1C = (available_capacity_dose1 (slot :: Slot)) > 0
-      vaxC =
-        ((vaccineType slotFilter) == "Any") ||
-        ((vaccine (slot :: Slot)) == (vaccineType slotFilter))
-      ageC =
-        ((age slotFilter) == -1) ||
-        ((min_age_limit (slot :: Slot)) == (age slotFilter))
-      feeC =
-        ((feeType slotFilter) == "Any") ||
-        ((fee_type (slot :: Slot)) == (feeType slotFilter))
-
-locToGmapUrl :: Float -> Float -> String
-locToGmapUrl lat lng = url
-  where
-    url =
-      "https://www.google.com/maps/@" ++
-      (show lat) ++ "," ++ (show lng) ++ ",6z"
-
-displaySlots :: SlotFilter -> Slots -> IO ()
-displaySlots slotFilter slots = do
-  mapM_
-    (\slot -> do
-       if (applyFilter slotFilter slot)
-         then printSlot slot
-         else return ())
-    (sessions (slots :: Slots))
+filterSlots :: SlotFilter -> [Slot] -> IO [FilteredSlot]
+filterSlots slotFilter slots = do
+  let fslots = filter (\slot -> (applyFilter slotFilter slot)) slots
+  let cslots =
+        map
+          (\slot ->
+             if (applyFilterCenter slotFilter slot)
+               then FilteredSlot True slot
+               else FilteredSlot False slot)
+          fslots
+  return cslots
 
 centersToSlots :: [Center] -> [Slot]
 centersToSlots cs = concat $ map (\c -> centerToSlots c) cs
@@ -118,26 +82,6 @@ centerToSlots c =
          (vaccine (s :: Session))
          (slots (s :: Session)))
     (sessions (c :: Center))
-
-class SlotPrinter t where
-  printSlot :: t -> IO ()
-
-instance SlotPrinter Slot where
-  printSlot slot = do
-    printf
-      "%s, %s, Age:%d, Fee:%s, %s, N:%d, %d, %d, %s, %d, %s, %s\n"
-      (date (slot :: Slot))
-      (vaccine (slot :: Slot))
-      (min_age_limit (slot :: Slot))
-      (fee_type (slot :: Slot))
-      (fee (slot :: Slot))
-      (available_capacity (slot :: Slot))
-      (available_capacity_dose1 (slot :: Slot))
-      (available_capacity_dose2 (slot :: Slot))
-      (name (slot :: Slot))
-      (pincode (slot :: Slot))
-      (block_name (slot :: Slot))
-      (address (slot :: Slot))
 
 lookupState :: String -> IO State -- TODO: IO (Maybe State)
 lookupState state = do
@@ -189,20 +133,69 @@ lookupDist state district = do
              0
          Nothing -> return District {})
 
+printSlots :: [FilteredSlot] -> IO ()
+printSlots fslots = do
+  let set1 = filter (\fslot -> ismatch (fslot :: FilteredSlot)) fslots
+  let set2 = filter (\fslot -> not (ismatch (fslot :: FilteredSlot))) fslots
+  putStrLn "[[--"
+  mapM_ printSlot (set2 ++ set1)
+  putStrLn "--]]"
+
 mainOpts = do
   args <- getArgs
   case args of
-    (state:district:fee:vax:age:date:_) -> do
-      let filter = (SlotFilter (read age :: Int) fee vax date state district)
-      printf "using filter=> %s" (show filter)
-      searchSlotsCalendar filter
-    _ -> putStrLn "cowinbob {state} {district} {fee} {vax} {age} {date}"
+    (state:district:fee:vax:age:date:cregx:itv:_) -> do
+      let sf =
+            SlotFilter
+              { age = (read age :: Int)
+              , feeType = fee
+              , vaccineType = vax
+              , searchDate = date
+              , state = state
+              , district = district
+              , centers = cregx
+              , interval = (read itv :: Int)
+              }
+      printf "<+> %s\n" (show sf)
+      forever $ do
+        (searchSlotsCalendar sf) >>= (filterSlots sf) >>= sendNotification >>=
+          printSlots
+        threadDelay (1000000 * (interval sf))
+    _ ->
+      putStrLn
+        "cowinbob {state} {district} {fee} {vax} {age} {date} {centers:regx} {refreshinterval}"
 
-main1 = do
-  st <- lookupState "Karnataka"
-  dt <- lookupDist st "BBMP"
-  print st
-  print dt
+sendNotification :: [FilteredSlot] -> IO ([FilteredSlot])
+sendNotification fslots = do
+  let fslots' = filter (\fslot -> ismatch (fslot :: FilteredSlot)) fslots
+  let msgs =
+        (map
+           (\fslot -> do
+              let oslot = slot (fslot :: FilteredSlot)
+              printf
+                " %s, %s, %d, %d, %s, %d "
+                (date (oslot :: Slot))
+                (vaccine (oslot :: Slot))
+                (min_age_limit (oslot :: Slot))
+                (available_capacity_dose1 (oslot :: Slot))
+                (name (oslot :: Slot))
+                (pincode (oslot :: Slot)))
+           fslots')
+  let msg = intercalate "\n" msgs
+  if msg == ""
+    then return fslots
+    else do
+      sendToTGChat msg
+      return fslots
+
+main2 = do
+  args <- getArgs
+  case args of
+    (sf:_) -> do
+      print sf
+      let filter = decode (C.pack sf) :: Maybe SlotFilter
+      print filter
+    _ -> return ()
 
 main :: IO ()
 main = mainOpts

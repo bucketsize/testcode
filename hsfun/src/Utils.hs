@@ -127,3 +127,5 @@ dumpTo fn s = do
 readFrom :: FilePath -> IO (String)
 readFrom fn = do
   withFile fn ReadMode (\h -> do hGetContents h)
+
+toLowerString = map toLower

@@ -82,7 +82,8 @@ sendToTGChat s = do
   let req = initReq {method = "GET"}
   manager <- noSSLVerifyManager
   res <- httpLbs req manager
-  putStrLn $ logHttp res
+  log <- logger "app.log"
+  log (logHttp res)
 
 requestOtp :: String -> IO (Maybe OtpRes)
 requestOtp m = do
@@ -92,7 +93,8 @@ requestOtp m = do
           {method = "POST", requestBody = RequestBodyLBS $ encode (OtpReq m)}
   manager <- noSSLVerifyManager
   res <- httpLbs req manager
-  putStrLn $ logHttp res
+  log <- logger "app.log"
+  log (logHttp res)
   let obj = decode (responseBody res) :: Maybe OtpRes
   return obj
 
@@ -106,7 +108,8 @@ validateOtp txnId otp = do
           }
   manager <- noSSLVerifyManager
   res <- httpLbs req manager
-  putStrLn $ logHttp res
+  log <- logger "app.log"
+  log (logHttp res)
   let obj = decode (responseBody res) :: Maybe OtpVRes
   return obj
 
@@ -116,7 +119,8 @@ getStates auth = do
   let req = initReq {method = "GET"}
   manager <- noSSLVerifyManager
   res <- httpLbs req manager
-  putStrLn $ logHttp res
+  log <- logger "app.log"
+  log (logHttp res)
   let obj = decode (responseBody res) :: Maybe States
   return obj
 
@@ -126,7 +130,8 @@ getDistricts auth stateId = do
   let req = initReq {method = "GET"}
   manager <- noSSLVerifyManager
   res <- httpLbs req manager
-  putStrLn $ logHttp res
+  log <- logger "app.log"
+  log (logHttp res)
   let obj = decode (responseBody res) :: Maybe Districts
   return obj
 
@@ -146,7 +151,8 @@ getSlotsByDistrict auth distId dateStr = do
           }
   manager <- noSSLVerifyManager
   res <- httpLbs req manager
-  putStrLn $ logHttp res
+  log <- logger "app.log"
+  log (logHttp res)
   let obj = decode (responseBody res) :: Maybe Slots
   return obj
 
