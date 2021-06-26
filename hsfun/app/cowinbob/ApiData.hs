@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE ExtendedDefaultRules #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
 --

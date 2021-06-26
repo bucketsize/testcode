@@ -1,7 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE ExtendedDefaultRules #-}
-{-# LANGUAGE DuplicateRecordFields #-}
 
 module Api where
 

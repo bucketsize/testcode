@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE ExtendedDefaultRules #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
 import Api
@@ -8,6 +7,7 @@ import ApiData
 import AppData
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Monad
+import Control.Monad.IO.Class
 import Data.Aeson (FromJSON, Object, ToJSON, decode, encode)
 import qualified Data.ByteString.Lazy.Char8 as C
 import Data.Char (toLower)
@@ -26,18 +26,24 @@ import Text.Printf (printf)
 import Text.Regex.TDFA
 import Utils
 
-searchSlotsCalendar :: SlotFilter -> IO ([Slot])
-searchSlotsCalendar slotFilter = do
-  let auth = AuthInfo "" "" "efgh"
-  st <- lookupState (state slotFilter)
-  dt <- lookupDist st (district slotFilter)
-  mcenters <-
-    getSlotsCalendarByDistrict
-      auth
-      (district_id (dt :: District))
-      (searchDate slotFilter)
-  case mcenters of
-    Just acenters -> return (centersToSlots (centers (acenters :: Centers)))
+auth = AuthInfo "" "" "efgh"
+
+searchSlotsCalendar :: SlotFilter -> IO [Slot]
+searchSlotsCalendar sf = do
+  st <- lookupState (state sf)
+  case st of
+    Just s -> do
+      dt <- lookupDist s (district sf)
+      case dt of
+        Just d -> do
+          cs <- getSlotsCalendarByDistrict
+                    auth
+                    (district_id (d :: District))
+                    (searchDate sf)
+          case cs of
+            Just ac -> return (centersToSlots (centers (ac :: Centers)))
+            Nothing -> return []
+        Nothing -> return []
     Nothing -> return []
 
 filterSlots :: SlotFilter -> [Slot] -> IO [FilteredSlot]
@@ -83,7 +89,7 @@ centerToSlots c =
          (slots (s :: Session)))
     (sessions (c :: Center))
 
-lookupState :: String -> IO State -- TODO: IO (Maybe State)
+lookupState :: String -> IO (Maybe State) -- TODO: IO (Maybe State)
 lookupState state = do
   let auth = AuthInfo "" "" "efgh"
   cachd <- fileExists "states.obj"
@@ -102,13 +108,12 @@ lookupState state = do
        case ms of
          Just ss -> do
            return $
-             (filter
+             Just ((filter
                 (\s -> (state_name (s :: State)) == state)
-                (toList (states (ss :: States)))) !!
-             0
-         Nothing -> return State {})
+                (toList (states (ss :: States)))) !! 0)
+         Nothing -> return Nothing)
 
-lookupDist :: State -> String -> IO District -- TODO: IO (Maybe District)
+lookupDist :: State -> String -> IO (Maybe District) -- TODO: IO (Maybe District)
 lookupDist state district = do
   let auth = AuthInfo "" "" "efgh"
   cachd <- fileExists "distrs.obj"
@@ -124,14 +129,13 @@ lookupDist state district = do
                   return x)
   mms >>=
     (\ms -> do
-       case ms of
-         Just ss -> do
-           return $
-             (filter
-                (\s -> (district_name (s :: District)) == district)
-                (toList (districts (ss :: Districts)))) !!
-             0
-         Nothing -> return District {})
+        case ms of
+          Just ss -> do
+            return $
+              Just ((filter
+                    (\s -> (district_name (s :: District)) == district)
+                    (toList (districts (ss :: Districts)))) !! 0)
+          Nothing -> return Nothing)
 
 printSlots :: [FilteredSlot] -> IO ()
 printSlots fslots = do
@@ -165,7 +169,7 @@ mainOpts = do
       putStrLn
         "cowinbob {state} {district} {fee} {vax} {age} {date} {centers:regx} {refreshinterval}"
 
-sendNotification :: [FilteredSlot] -> IO ([FilteredSlot])
+sendNotification :: [FilteredSlot] -> IO [FilteredSlot]
 sendNotification fslots = do
   let fslots' = filter (\fslot -> ismatch (fslot :: FilteredSlot)) fslots
   let msgs =

@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE ExtendedDefaultRules #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
 module AppData where
@@ -50,8 +49,8 @@ instance SlotPrinter FilteredSlot where
           printf
             "%s %s, %s, Age:%d, Fee:%s, %s, N:%d, %d, %d, %s, %d, %s, %s"
             (if (ismatch (fslot :: FilteredSlot))
-               then "*"
-               else " ")
+               then "*" :: String
+               else " " :: String)
             (date (oslot :: Slot))
             (vaccine (oslot :: Slot))
             (min_age_limit (oslot :: Slot))
