@@ -129,3 +129,9 @@ readFrom fn = do
   withFile fn ReadMode (\h -> do hGetContents h)
 
 toLowerString = map toLower
+
+mayL :: Maybe [a] -> [a]
+mayL ma =
+  case ma of
+    Just a  -> a
+    Nothing -> []

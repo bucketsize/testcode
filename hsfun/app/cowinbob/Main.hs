@@ -8,6 +8,7 @@ import AppData
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.Trans.Maybe
 import Data.Aeson (FromJSON, Object, ToJSON, decode, encode)
 import qualified Data.ByteString.Lazy.Char8 as C
 import Data.Char (toLower)
@@ -28,23 +29,21 @@ import Utils
 
 auth = AuthInfo "" "" "efgh"
 
-searchSlotsCalendar :: SlotFilter -> IO [Slot]
+searchSlotsCalendar :: SlotFilter -> IO (Maybe [Slot])
 searchSlotsCalendar sf = do
-  st <- lookupState (state sf)
-  case st of
-    Just s -> do
-      dt <- lookupDist s (district sf)
-      case dt of
-        Just d -> do
-          cs <- getSlotsCalendarByDistrict
+  runMaybeT $
+    MaybeT (lookupState (state sf))
+    >>= (\s -> do
+            MaybeT (lookupDist s (district sf)))
+    >>= (\d -> do
+            MaybeT
+               (getSlotsCalendarByDistrict
                     auth
                     (district_id (d :: District))
-                    (searchDate sf)
-          case cs of
-            Just ac -> return (centersToSlots (centers (ac :: Centers)))
-            Nothing -> return []
-        Nothing -> return []
-    Nothing -> return []
+                    (searchDate sf)))
+    >>= (\ac -> do
+            return (centersToSlots (centers (ac :: Centers))))
+
 
 filterSlots :: SlotFilter -> [Slot] -> IO [FilteredSlot]
 filterSlots slotFilter slots = do
@@ -89,11 +88,11 @@ centerToSlots c =
          (slots (s :: Session)))
     (sessions (c :: Center))
 
-lookupState :: String -> IO (Maybe State) -- TODO: IO (Maybe State)
+lookupState :: String -> IO (Maybe State)
 lookupState state = do
-  let auth = AuthInfo "" "" "efgh"
-  cachd <- fileExists "states.obj"
-  let mms =
+  fileExists "states.obj"
+    >>=
+    (\cachd -> do
         if cachd
           then (readFile "states.obj") >>=
                (\x -> return (Just (read x :: States)))
@@ -102,8 +101,8 @@ lookupState state = do
                   case x of
                     Just y -> dumpTo "states.obj" (show y)
                     Nothing -> return ()
-                  return x)
-  mms >>=
+                  return x))
+    >>=
     (\ms -> do
        case ms of
          Just ss -> do
@@ -113,12 +112,12 @@ lookupState state = do
                 (toList (states (ss :: States)))) !! 0)
          Nothing -> return Nothing)
 
-lookupDist :: State -> String -> IO (Maybe District) -- TODO: IO (Maybe District)
+lookupDist :: State -> String -> IO (Maybe District)
 lookupDist state district = do
-  let auth = AuthInfo "" "" "efgh"
-  cachd <- fileExists "distrs.obj"
-  let mms =
-        if cachd
+  fileExists "distrs.obj"
+    >>=
+    (\cachd -> do
+      if cachd
           then (readFile "distrs.obj") >>=
                (\x -> return (Just (read x :: Districts)))
           else (getDistricts auth (state_id (state :: State))) >>=
@@ -126,8 +125,8 @@ lookupDist state district = do
                   case x of
                     Just y -> dumpTo "distrs.obj" (show y)
                     Nothing -> return ()
-                  return x)
-  mms >>=
+                  return x))
+    >>=
     (\ms -> do
         case ms of
           Just ss -> do
@@ -146,11 +145,24 @@ printSlots fslots = do
   putStrLn "--]]"
 
 mainOpts = do
+  msf <- getFilter
+  case msf of
+    Just sf -> do
+      printf "<+> %s\n" (show sf)
+      forever $ do
+        fmap mayL (searchSlotsCalendar sf)
+          >>= (filterSlots sf)
+          >>= sendNotification
+          >>= printSlots
+        threadDelay (1000000 * (interval sf))
+    Nothing -> return ()
+
+getFilter :: IO (Maybe SlotFilter)
+getFilter = do
   args <- getArgs
   case args of
     (state:district:fee:vax:age:date:cregx:itv:_) -> do
-      let sf =
-            SlotFilter
+            return (Just SlotFilter
               { age = (read age :: Int)
               , feeType = fee
               , vaccineType = vax
@@ -159,22 +171,20 @@ mainOpts = do
               , district = district
               , centers = cregx
               , interval = (read itv :: Int)
-              }
-      printf "<+> %s\n" (show sf)
-      forever $ do
-        (searchSlotsCalendar sf) >>= (filterSlots sf) >>= sendNotification >>=
-          printSlots
-        threadDelay (1000000 * (interval sf))
-    _ ->
+              })
+    _ -> do
       putStrLn
         "cowinbob {state} {district} {fee} {vax} {age} {date} {centers:regx} {refreshinterval}"
+      return Nothing
 
 sendNotification :: [FilteredSlot] -> IO [FilteredSlot]
 sendNotification fslots = do
   let fslots' = filter (\fslot -> ismatch (fslot :: FilteredSlot)) fslots
-  let msgs =
-        (map
-           (\fslot -> do
+  case fslots' of
+    (f:fs) -> do
+      let msgs =
+            map
+            (\fslot -> do
               let oslot = slot (fslot :: FilteredSlot)
               printf
                 " %s, %s, %d, %d, %s, %d "
@@ -184,13 +194,11 @@ sendNotification fslots = do
                 (available_capacity_dose1 (oslot :: Slot))
                 (name (oslot :: Slot))
                 (pincode (oslot :: Slot)))
-           fslots')
-  let msg = intercalate "\n" msgs
-  if msg == ""
-    then return fslots
-    else do
+            fslots'
+      let msg = intercalate "\n" msgs
       sendToTGChat msg
       return fslots
+    [] -> return fslots
 
 main2 = do
   args <- getArgs

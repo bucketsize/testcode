@@ -16,11 +16,7 @@ cpuUsageAg t z = do
   threadDelay 1000000
   cpuUsageAg t1 z1
 
-
-main :: IO ()
-main = main2
-
-main1 = do
+monitor = do
   forkIO (do
     forever (do
         m <- memUsage
@@ -38,16 +34,11 @@ main1 = do
     threadDelay (1000000*60)
     )
 
-main2 = do
+main :: IO ()
+main = do
   args <- getArgs
-  case args of
-    [a, q] -> do
-      if a == "fun" then do
-        let s = dispatch q
-        case s of
-          Just x  -> putStrLn("") -- FIXME
-          Nothing -> putStrLn("")
-      else
-        putStrLn("")
-    _ -> putStrLn("")
-
+  route args
+    where
+      route ("cmd":q:_) = putStrLn (show (dispatch q))
+      route ("mon":_) = monitor
+      route _ = putStrLn "sysmon {cmd|mon} [{cmd}]"
