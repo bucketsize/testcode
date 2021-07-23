@@ -1,17 +1,21 @@
 module Utils where
 
-import Control.Monad
 import qualified Data.ByteString.Char8 as C8
 import Data.Char
 import Data.List (lines)
-import System.Directory
+import System.Directory (doesFileExist)
 import System.Environment (getArgs)
 import System.IO
 
 import Text.HandsomeSoup
 import Text.XML.HXT.Core
 
---import System.IO.Streams.File
+import Control.Monad.IO.Class (liftIO)
+import Control.Exception (try, Exception, SomeException)
+import Control.Monad (forM, forM_)
+import System.Directory (doesDirectoryExist, getDirectoryContents)
+import System.FilePath ((</>))
+
 fact :: Int -> Int
 fact 0 = 1
 fact n = n * fact (n - 1)
@@ -135,3 +139,40 @@ mayL ma =
   case ma of
     Just a  -> a
     Nothing -> []
+
+findFiles :: FilePath -> IO [FilePath]
+findFiles fp = do
+  fnsex <- try (getDirectoryContents fp) :: IO (Either SomeException [FilePath])
+  case fnsex of
+    Left  e -> do
+      putStrLn ("ERROR: unable to read " ++ fp)
+      return []
+    Right fns -> do
+      let fns' = filter (`notElem` [".", ".."]) fns
+      fps <- forM fns' (\fn -> do
+        let fp' = fp </> fn
+        isDirectory <- doesDirectoryExist fp'
+        if isDirectory
+          then findFiles fp'
+          else return [fp'])
+      return (concat fps)
+
+applyFiles :: FilePath -> (FilePath -> IO a) -> IO [a]
+applyFiles fp fun = do
+  fnsex <- try (getDirectoryContents fp) :: IO (Either SomeException [FilePath])
+  case fnsex of
+    Left  e -> do
+      putStrLn ("ERROR: unable to read " ++ fp)
+      return []
+    Right fns -> do
+      let fns' = filter (`notElem` [".", ".."]) fns
+      fps <- forM
+        fns'
+        (\fn -> do
+          let fp' = fp </> fn
+          r <- fun fp'
+          isDirectory <- doesDirectoryExist fp'
+          if isDirectory
+            then applyFiles fp' fun
+            else return [r])
+      return (concat fps)

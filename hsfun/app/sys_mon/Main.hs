@@ -39,6 +39,10 @@ main = do
   args <- getArgs
   route args
     where
-      route ("cmd":q:_) = putStrLn (show (dispatch q))
+      route ("cmd":q:_) = do
+        r <- dispatch q
+        case r of
+          Just s -> putStrLn s
+          Nothing -> putStrLn ""
       route ("mon":_) = monitor
       route _ = putStrLn "sysmon {cmd|mon} [{cmd}]"

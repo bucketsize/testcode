@@ -47,6 +47,8 @@ dependencies:
 - http-types
 - http-client
 - http-client-tls
+- hspec
+- filepath
 
 library:
   source-dirs: src
@@ -85,7 +87,9 @@ executables:
 tests:
   hsfun-test:
     main:                Spec.hs
-    source-dirs:         test
+    source-dirs:
+    - test
+    - app/sys_mon
     ghc-options:
     - -threaded
     - -rtsopts

@@ -9,8 +9,7 @@ import Prelude hiding (lookup)
 import Data.List (lookup)
 import System.Process
 import Text.Regex.TDFA
-import Text.Printf (printf)
-import Control.Monad.Trans.Maybe
+import Text.Printf
 
 data Monitor = Monitor
   { output :: String
@@ -62,13 +61,15 @@ cmds =
   ]
 
 
-scr_lock_if_pa_is_active :: IO (Maybe String)
+scr_lock_if_pa_is_active :: IO String
 scr_lock_if_pa_is_active = do
   s <- pa_is_active
   if s then
-       return (lookup "scr_lock" cmds)
+       case (lookup "scr_lock" cmds) of
+         Just r -> return r
+         Nothing ->  return ""
   else
-       return Nothing
+       return ""
 
 pa_is_active :: IO Bool
 pa_is_active = do
@@ -76,21 +77,22 @@ pa_is_active = do
   let m = ss =~ "state: RUNNING.*" :: Bool
   return m
 
-pa_set_default :: IO (Maybe String)
+pa_set_default :: IO String
 pa_set_default = do
   ss <- readProcess "pacmd" ["list-sinks"] []
   let (a,b,c,m) = ss =~ "name:[[:blank:]]<(.+analog.stereo)>" :: (String, String, String, [String])
-  return $ Just ("pacmd set-default-sink " ++ (m!!0))
+  return ("pacmd set-default-sink " ++ (m!!0))
 
-funs :: [(String, IO (Maybe String))]
+funs :: [(String, IO String)]
 funs =
   [ ("scr_lock_if_pa_is_active", scr_lock_if_pa_is_active)
   , ("pa_set_default", pa_set_default)
   ]
 
-dispatch :: String -> IO (Maybe String)
+dispatch :: String -> Maybe String
 dispatch cmd = do
   case lookup cmd funs of
-    Just f -> f
-    Nothing -> do
-      return (lookup cmd cmds)
+    Just f -> do
+      r <- liftIO f
+      Just r
+    Nothing -> (lookup cmd cmds)
