@@ -9,30 +9,43 @@ import Control.Concurrent.MVar (newEmptyMVar, takeMVar, putMVar)
 import SysFns
 import SysCtl
 
-cpuUsageAg :: Float -> Float -> IO ()
-cpuUsageAg t z = do
-  (t1, z1, c) <- cpuUsage t z
-  putStrLn("cpu: " ++ show c)
-  threadDelay 1000000
-  cpuUsageAg t1 z1
+import Control.Monad.Coroutine (Coroutine, pogoStick, bounce)
+import Control.Monad.Coroutine.SuspensionFunctors
+import Control.Monad.Trans.Class (lift)
+import Control.Monad.IO.Class (liftIO)
+
+crCpuUsage :: Coroutine (Yield Float) IO ()
+crCpuUsage = do
+  cputz 0.0 0.0
+  return ()
+  where
+    cputz t z = do
+      (tn,zn,c) <- lift (cpuUsage t z)
+      yield c
+      cputz tn zn
+
+runCR :: Show x => Coroutine (Yield x) IO r -> IO r
+runCR cr =
+  pogoStick
+  (\(Yield x cont) -> do
+      lift (print x)
+      lift $ threadDelay 500000
+      cont
+  )
+  (cr)
+
+runCR2 :: Show x => Coroutine (Yield x) IO r -> IO r
+runCR2 cr = do
+  c1 <- liftIO $ bounce
+    (\(Yield x cont) -> do
+        lift (print x)
+        cont
+    )
+    (cr)
+  return ()
 
 monitor = do
-  forkIO (do
-    forever (do
-        m <- memUsage
-        putStrLn("mem: " ++ show m)
-        threadDelay 1000000
-      )
-    )
-
-  forkIO (do
-    cpuUsageAg 0.0 0.0
-    )
-
-  putStrLn("Started, waiting for killSig ...")
-  forever (do
-    threadDelay (1000000*60)
-    )
+  liftIO (runCR crCpuUsage)
 
 main :: IO ()
 main = do

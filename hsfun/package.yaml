@@ -49,6 +49,7 @@ dependencies:
 - http-client-tls
 - hspec
 - filepath
+- monad-coroutine
 
 library:
   source-dirs: src
